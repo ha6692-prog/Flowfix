@@ -1,0 +1,170 @@
+"""
+management/commands/seed_gigshield.py
+
+Usage:
+  python manage.py seed_gigshield --city=Chennai
+
+Creates:
+  1 City + 5 Zones (pool_balance=50000 each)
+  3 PolicyPlans (Basic/Standard/Full)
+  10 test Drivers + ReserveWallets (mixed tiers)
+  1 WeatherSnapshot (consensus_confirmed=True) per zone
+
+Safe to run multiple times — uses get_or_create for city/plans.
+"""
+import hashlib
+import uuid
+
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+
+class Command(BaseCommand):
+    help = 'Seed GigShield with test data for a given city'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--city', type=str, default='Chennai', help='City name to seed')
+
+    def handle(self, *args, **options):
+        city_name = options['city']
+        self.stdout.write(self.style.MIGRATE_HEADING(f'\n[SEED] Seeding GigShield for {city_name}...\n'))
+
+        # ── 1. City ────────────────────────────────────────────────────────────
+        from apps.users.models import City, Zone, Driver
+        city, created = City.objects.get_or_create(name=city_name, defaults={'is_active': True})
+        action = 'Created' if created else 'Found existing'
+        self.stdout.write(self.style.SUCCESS(f'  [OK] {action} city: {city.name}'))
+
+        # ── 2. Zones ───────────────────────────────────────────────────────────
+        zone_names = ['North Zone', 'South Zone', 'East Zone', 'West Zone', 'Central Zone']
+        zones = []
+        for zname in zone_names:
+            zone, _ = Zone.objects.get_or_create(
+                name=zname,
+                city=city,
+                defaults={
+                    'pool_balance': 50000,
+                    'risk_score': 0.3,
+                    'active_driver_count': 0,
+                },
+            )
+            if zone.pool_balance < 50000:
+                zone.pool_balance = 50000
+            zone.save()  # triggers max_cross_subsidy recalc
+            zones.append(zone)
+
+        self.stdout.write(self.style.SUCCESS(f'  [OK] Created/verified {len(zones)} zones (Rs.50,000 each)'))
+
+        # ── 3. Policy Plans ────────────────────────────────────────────────────
+        from apps.policies.models import PolicyPlan
+        plans_data = [
+            {'name': 'Basic',    'weekly_premium': 20, 'daily_payout_rate': 200, 'max_coverage_days': 3},
+            {'name': 'Standard', 'weekly_premium': 50, 'daily_payout_rate': 300, 'max_coverage_days': 5},
+            {'name': 'Full',     'weekly_premium': 99, 'daily_payout_rate': 400, 'max_coverage_days': 7},
+        ]
+        plans = {}
+        for pd in plans_data:
+            plan, _ = PolicyPlan.objects.get_or_create(
+                name=pd['name'],
+                defaults={
+                    'weekly_premium': pd['weekly_premium'],
+                    'daily_payout_rate': pd['daily_payout_rate'],
+                    'max_coverage_days': pd['max_coverage_days'],
+                    'reserve_contribution_rate': 0.10,
+                    'seasonal_multiplier': 1.0,
+                },
+            )
+            plans[pd['name']] = plan
+
+        self.stdout.write(self.style.SUCCESS(f'  [OK] Created/verified 3 protection fund plans'))
+
+        # ── 4. Test Drivers ────────────────────────────────────────────────────
+        from apps.policies.models import DriverPolicy, ReserveWallet
+
+        drivers_data = [
+            {'name': 'Ravi Kumar',    'phone': '9100000001', 'months': 1,  'tier': 'bronze',   'plan': 'Basic',    'zone': 0},
+            {'name': 'Priya Devi',    'phone': '9100000002', 'months': 5,  'tier': 'silver',   'plan': 'Standard', 'zone': 1},
+            {'name': 'Suresh S',      'phone': '9100000003', 'months': 9,  'tier': 'gold',     'plan': 'Full',     'zone': 2},
+            {'name': 'Meena R',       'phone': '9100000004', 'months': 14, 'tier': 'platinum', 'plan': 'Full',     'zone': 3},
+            {'name': 'Arjun T',       'phone': '9100000005', 'months': 3,  'tier': 'bronze',   'plan': 'Basic',    'zone': 4},
+            {'name': 'Kavitha M',     'phone': '9100000006', 'months': 6,  'tier': 'silver',   'plan': 'Standard', 'zone': 0},
+            {'name': 'Dinesh P',      'phone': '9100000007', 'months': 11, 'tier': 'gold',     'plan': 'Full',     'zone': 1},
+            {'name': 'Lakshmi A',     'phone': '9100000008', 'months': 18, 'tier': 'platinum', 'plan': 'Full',     'zone': 2},
+            {'name': 'Bala G',        'phone': '9100000009', 'months': 2,  'tier': 'bronze',   'plan': 'Basic',    'zone': 3},
+            {'name': 'Vijaya C',      'phone': '9100000010', 'months': 8,  'tier': 'gold',     'plan': 'Standard', 'zone': 4},
+        ]
+
+        tier_balances = {'bronze': 24, 'silver': 50, 'gold': 104, 'platinum': 192}
+        drivers_created = 0
+
+        for i, dd in enumerate(drivers_data):
+            if Driver.objects.filter(phone=dd['phone']).exists():
+                continue
+
+            # Generate deterministic hash for aadhaar (test only — never real)
+            aadhaar_raw = f"TEST_AADHAAR_{dd['phone']}_SEED"
+            aadhaar_hash = hashlib.sha256(aadhaar_raw.encode()).hexdigest()
+
+            driver = Driver(
+                phone=dd['phone'],
+                name=dd['name'],
+                city=city,
+                zone=zones[dd['zone']],
+                aadhaar_hash=aadhaar_hash,
+                device_fingerprint=f'seed_device_{i:04d}_{uuid.uuid4().hex[:8]}',
+                months_active=dd['months'],
+                is_active=True,
+                consent_given=True,
+                consent_timestamp=timezone.now(),
+            )
+            driver.set_password('gigshield123')  # test password only
+            driver.save()
+
+            policy = DriverPolicy.objects.create(
+                driver=driver,
+                plan=plans[dd['plan']],
+                is_active=True,
+            )
+
+            wallet_balance = tier_balances.get(dd['tier'], 24)
+            ReserveWallet.objects.create(
+                driver=driver,
+                balance=wallet_balance,
+                total_ever_earned=wallet_balance,
+                tier=dd['tier'],
+            )
+
+            drivers_created += 1
+
+        self.stdout.write(self.style.SUCCESS(f'  [OK] Created {drivers_created} test drivers (password: gigshield123)'))
+
+        # ── 5. WeatherSnapshot (consensus_confirmed=True) ──────────────────────
+        from apps.monitoring.models import WeatherSnapshot
+        for zone in zones:
+            WeatherSnapshot.objects.create(
+                zone=zone,
+                rainfall_mm=35.5,       # Heavy rain → high weather_score
+                wind_speed_ms=12.0,
+                temperature_c=28.0,
+                aqi=120.0,
+                source_owm=True,
+                source_acw=True,
+                source_imd=False,       # IMD down — consensus still met (2/3)
+            )
+
+        self.stdout.write(self.style.SUCCESS(
+            f'  [OK] Created {len(zones)} WeatherSnapshots (consensus_confirmed=True, IMD=False)'
+        ))
+
+        # ── Summary ────────────────────────────────────────────────────────────
+        self.stdout.write('')
+        self.stdout.write(self.style.MIGRATE_HEADING('[DONE] Seed complete! Test demo loop:'))
+        self.stdout.write('')
+        self.stdout.write('  1. POST /api/auth/login/  {"phone":"9100000001","password":"gigshield123"}')
+        self.stdout.write('  2. POST /api/policies/activate/  {"plan_id": 1}  (if not already active)')
+        self.stdout.write('  3. Set SHADOW_MODE=False in .env → restart server')
+        self.stdout.write('  4. In shell: from apps.monitoring.tasks import edz_engine_task; edz_engine_task.apply()')
+        self.stdout.write('  5. Watch Claim → fraud check → payout in Django admin')
+        self.stdout.write('  6. GET /api/claims/active/')
+        self.stdout.write('  7. GET /api/stats/public/')
+        self.stdout.write('')
