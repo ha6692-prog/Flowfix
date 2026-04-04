@@ -24,11 +24,21 @@ export default function useWebSocket(driverId, onMessage) {
     const token = localStorage.getItem('gs_access')
     if (!token) return
 
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const host = window.location.host
-    const url = `${protocol}://${host}/ws/claim/${driverId}/?token=${token}`
+    // Determine WebSocket URL from environment or current location
+    let wsUrl
+    const wsEnvUrl = import.meta.env.VITE_WS_URL
+    
+    if (wsEnvUrl) {
+      // Use environment variable (e.g., wss://api.example.com)
+      wsUrl = `${wsEnvUrl}/ws/claim/${driverId}/?token=${token}`
+    } else {
+      // Fallback to current location for local development
+      const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+      const host = window.location.host
+      wsUrl = `${protocol}://${host}/ws/claim/${driverId}/?token=${token}`
+    }
 
-    const ws = new WebSocket(url)
+    const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 
     ws.onopen = () => {

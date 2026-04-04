@@ -1,8 +1,12 @@
 import axios from 'axios'
 
+// ── API URL Configuration ────────────────────────────────────────────────────
+// Use environment variable for production backend, fallback to /api for local proxy
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+
 // ── Axios instance ────────────────────────────────────────────────────────────
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -23,7 +27,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('gs_refresh')
       if (refresh) {
         try {
-          const { data } = await axios.post('/api/auth/token/refresh/', { refresh })
+          const { data } = await api.post('/auth/token/refresh/', { refresh })
           localStorage.setItem('gs_access', data.access)
           original.headers.Authorization = `Bearer ${data.access}`
           return api(original)
