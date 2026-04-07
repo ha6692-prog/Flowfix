@@ -2,7 +2,8 @@ import axios from 'axios'
 
 // ── API URL Configuration ────────────────────────────────────────────────────
 // Use environment variable for production backend, fallback to /api for local proxy
-const API_URL = import.meta.env.VITE_API_URL || 'https://flowfix-l2vs.onrender.com/api'
+const BASE = import.meta.env.VITE_API_URL || 'https://flowfix-l2vs.onrender.com'
+const API_URL = BASE.endsWith('/api') ? BASE : `${BASE}/api`
 
 // ── Axios instance ────────────────────────────────────────────────────────────
 const api = axios.create({
@@ -46,6 +47,7 @@ api.interceptors.response.use(
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
   login:    (data) => api.post('/auth/login/', data),
+  register: (data) => api.post('/auth/register/', data),
 }
 
 // ── Policies ─────────────────────────────────────────────────────────────────
