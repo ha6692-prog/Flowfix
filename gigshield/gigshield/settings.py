@@ -31,7 +31,6 @@ if RENDER_EXTERNAL_HOSTNAME:
 # ── Apps ──────────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     # 'daphne',                           # disabled for SQLite dev — re-enable for production
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
