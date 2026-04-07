@@ -24,17 +24,51 @@ def seed_data(apps, schema_editor):
         }
     )
 
-    # Seed Test Driver
+    # Seed Test Driver 1 (Prateek)
     Driver.objects.get_or_create(
         platform_id='ZMT-DRV-0001',
         defaults={
             'phone': '5550001111',
             'password': make_password('test123'),
-            'name': 'Test Driver',
+            'name': 'Prateek',
             'city': city_obj,
             'zone': zone_obj,
-            'aadhaar_hash': 'fake_aadhaar_hash',
-            'device_fingerprint': 'fake_fingerprint',
+            'aadhaar_hash': 'fake_aadhaar_1',
+            'device_fingerprint': 'fingerprint_1',
+            'is_active': True,
+            'consent_given': True,
+            'consent_timestamp': timezone.now(),
+        }
+    )
+
+    # Seed Test Driver 2 (Ananya)
+    Driver.objects.get_or_create(
+        platform_id='SWG-DRV-0002',
+        defaults={
+            'phone': '5550002222',
+            'password': make_password('test123'),
+            'name': 'Ananya',
+            'city': city_obj,
+            'zone': zone_obj,
+            'aadhaar_hash': 'fake_aadhaar_2',
+            'device_fingerprint': 'fingerprint_2',
+            'is_active': True,
+            'consent_given': True,
+            'consent_timestamp': timezone.now(),
+        }
+    )
+
+    # Seed Test Driver 3 (Kiran)
+    Driver.objects.get_or_create(
+        platform_id='ZMT-DRV-0003',
+        defaults={
+            'phone': '5550003333',
+            'password': make_password('test123'),
+            'name': 'Kiran',
+            'city': city_obj,
+            'zone': zone_obj,
+            'aadhaar_hash': 'fake_aadhaar_3',
+            'device_fingerprint': 'fingerprint_3',
             'is_active': True,
             'consent_given': True,
             'consent_timestamp': timezone.now(),
