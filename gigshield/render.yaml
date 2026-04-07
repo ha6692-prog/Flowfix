@@ -1,0 +1,30 @@
+databases:
+  - name: gigshield-db
+    plan: free
+    databaseName: gigshield_db
+    user: gigshield
+
+services:
+  - type: web
+    name: gigshield-api
+    plan: free
+    runtime: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn gigshield.wsgi:application"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: gigshield-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: SHADOW_MODE
+        value: "True"
+      - key: PYTHON_VERSION
+        value: "3.11.8"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        value: "https://flowfix-six.vercel.app"
