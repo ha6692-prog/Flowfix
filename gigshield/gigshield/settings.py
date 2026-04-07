@@ -20,7 +20,7 @@ if not os.environ.get('RENDER') and env_file.exists():
     environ.Env.read_env(env_file)
 
 SECRET_KEY = env('SECRET_KEY', default='change-me-in-production')
-DEBUG = False
+DEBUG = True
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
 # Allow Render hostname
