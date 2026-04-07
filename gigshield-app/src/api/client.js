@@ -3,7 +3,7 @@ import axios from 'axios'
 // ── API URL Configuration ────────────────────────────────────────────────────
 // Use environment variable for production backend, fallback to /api for local proxy
 const BASE = import.meta.env.VITE_API_URL || 'https://flowfix-l2vs.onrender.com'
-const API_URL = BASE.endsWith('/api') ? BASE : `${BASE}/api`
+const API_URL = BASE.endsWith('/api') ? `${BASE}/` : `${BASE}/api/`
 
 // ── Axios instance ────────────────────────────────────────────────────────────
 const api = axios.create({
@@ -28,7 +28,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('gs_refresh')
       if (refresh) {
         try {
-          const { data } = await api.post('/auth/token/refresh/', { refresh })
+          const { data } = await api.post('auth/token/refresh/', { refresh })
           localStorage.setItem('gs_access', data.access)
           original.headers.Authorization = `Bearer ${data.access}`
           return api(original)
@@ -46,34 +46,34 @@ api.interceptors.response.use(
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login:    (data) => api.post('/auth/login/', data),
-  register: (data) => api.post('/auth/register/', data),
+  login:    (data) => api.post('auth/login/', data),
+  register: (data) => api.post('auth/register/', data),
 }
 
 // ── Policies ─────────────────────────────────────────────────────────────────
 export const policiesApi = {
-  listPlans:      ()       => api.get('/policies/plans/'),
-  activate:       (data)   => api.post('/policies/activate/', data),
-  myPolicy:       ()       => api.get('/policies/my-policy/'),
-  cancel:         ()       => api.post('/policies/cancel/', {}),
+  listPlans:      ()       => api.get('policies/plans/'),
+  activate:       (data)   => api.post('policies/activate/', data),
+  myPolicy:       ()       => api.get('policies/my-policy/'),
+  cancel:         ()       => api.post('policies/cancel/', {}),
 }
 
 // ── Monitoring ────────────────────────────────────────────────────────────────
 export const monitoringApi = {
-  beacon:  (data) => api.post('/monitoring/beacon/', data),
-  zoneEdz: ()     => api.get('/monitoring/zone-edz/'),
+  beacon:  (data) => api.post('monitoring/beacon/', data),
+  zoneEdz: ()     => api.get('monitoring/zone-edz/'),
 }
 
 // ── Claims ────────────────────────────────────────────────────────────────────
 export const claimsApi = {
-  myClaims:    (page = 1) => api.get(`/claims/my-claims/?page=${page}`),
-  activeClaim: ()         => api.get('/claims/active/'),
+  myClaims:    (page = 1) => api.get(`claims/my-claims/?page=${page}`),
+  activeClaim: ()         => api.get('claims/active/'),
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 export const analyticsApi = {
-  publicStats: () => api.get('/stats/public/'),
-  poolHealth:  () => api.get('/dashboard/pool-health/'),
+  publicStats: () => api.get('stats/public/'),
+  poolHealth:  () => api.get('dashboard/pool-health/'),
 }
 
 // ── Amount formatter ──────────────────────────────────────────────────────────
