@@ -104,13 +104,13 @@ class LoginSerializer(serializers.Serializer):
         try:
             driver = Driver.objects.get(platform_id=data['platform_id'])
         except Driver.DoesNotExist:
-            raise serializers.ValidationError('Invalid Platform ID or password.')
+            raise serializers.ValidationError({'non_field_errors': ['Invalid Platform ID or password.']})
 
         if not driver.is_active:
-            raise serializers.ValidationError('This account has been deactivated.')
+            raise serializers.ValidationError({'non_field_errors': ['This account has been deactivated.']})
 
         if not driver.check_password(data['password']):
-            raise serializers.ValidationError('Invalid Platform ID or password.')
+            raise serializers.ValidationError({'non_field_errors': ['Invalid Platform ID or password.']})
 
         data['driver'] = driver
         return data
