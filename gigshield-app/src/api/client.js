@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // ── API URL Configuration ────────────────────────────────────────────────────
 // Use environment variable for production backend, fallback to /api for local proxy
-const API_URL = import.meta.env.VITE_API_URL || '/api'
+const API_URL = import.meta.env.VITE_API_URL || 'https://flowfix-l2vs.onrender.com/api'
 
 // ── Axios instance ────────────────────────────────────────────────────────────
 const api = axios.create({
