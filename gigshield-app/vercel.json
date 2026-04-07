@@ -5,14 +5,8 @@
   "framework": "vite",
   "outputDirectory": "dist",
   "env": {
-    "VITE_API_URL": {
-      "description": "Backend API URL (e.g., https://your-backend.example.com)",
-      "required": false
-    },
-    "VITE_WS_URL": {
-      "description": "WebSocket backend URL (e.g., wss://your-backend.example.com)",
-      "required": false
-    }
+    "VITE_API_URL": "https://flowfix-l2vs.onrender.com/api",
+    "VITE_WS_URL": "wss://flowfix-l2vs.onrender.com"
   },
   "routes": [
     {
