@@ -1,8 +1,5 @@
-"""
-GigShield requirements
-======================
-Django + DRF + Celery + Redis + PostgreSQL + Razorpay + Channels + JWT
-"""
+# GigShield requirements
+# Django + DRF + Celery + Redis + PostgreSQL + Razorpay + Channels + JWT
 Django==4.2.11
 djangorestframework==3.14.0
 celery==5.3.6
