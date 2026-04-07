@@ -16,7 +16,7 @@ env = environ.Env(
 )
 
 env_file = BASE_DIR / '.env'
-if env_file.exists():
+if not os.environ.get('RENDER') and env_file.exists():
     environ.Env.read_env(env_file)
 
 SECRET_KEY = env('SECRET_KEY', default='change-me-in-production')
