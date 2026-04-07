@@ -15,7 +15,9 @@ env = environ.Env(
     DATA_RETENTION_DAYS=(int, 365),
 )
 
-environ.Env.read_env(BASE_DIR / '.env')
+env_file = BASE_DIR / '.env'
+if env_file.exists():
+    environ.Env.read_env(env_file)
 
 SECRET_KEY = env('SECRET_KEY', default='change-me-in-production')
 DEBUG = env('DEBUG')
