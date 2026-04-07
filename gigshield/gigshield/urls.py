@@ -1,8 +1,12 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.http import JsonResponse
+
+def health_check(request):
+    return JsonResponse({"status": "ok"})
 
 urlpatterns = [
+    path('health', health_check, name='health-check'),
     path('admin/', admin.site.urls),
     path('api/', include('gigshield.api_urls')),
 ]
