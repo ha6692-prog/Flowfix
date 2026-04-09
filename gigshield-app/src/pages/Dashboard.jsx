@@ -58,6 +58,12 @@ export default function Dashboard() {
     refetchInterval: 60_000,
   })
 
+  const { data: pool, isLoading: poolLoading } = useQuery({
+    queryKey: ['pool-health'],
+    queryFn: () => analyticsApi.poolHealth().then(r => r.data),
+    refetchInterval: 300_000, // 5 min
+  })
+
   const wallet = policy?.wallet
 
   return (

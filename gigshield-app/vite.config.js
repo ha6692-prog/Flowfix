@@ -6,12 +6,13 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+        // Redirect local /api calls to the Django backend
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8000',
         changeOrigin: true,
       },
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: 'ws://localhost:8000',
         ws: true,
         changeOrigin: true,
       },

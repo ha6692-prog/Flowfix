@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { analyticsApi, formatINR } from '../api/client';
 
 export default function IntelligenceGrid() {
   return (
@@ -47,7 +48,6 @@ function EngineCard() {
       {/* Deck container */}
       <div className="relative h-[200px] w-full mt-4" style={{ perspective: '1000px' }}>
         {deck.map((card, i) => {
-          // Default stacking calculations
           const defaultY = i * 8;
           return (
             <div 
@@ -55,7 +55,6 @@ function EngineCard() {
               className="deck-card absolute left-[7.5%] w-[85%] bg-[#1a1c20] rounded-[14px] border border-[rgba(255,255,255,0.07)] p-3 px-4 flex justify-between items-center z-10 transition-all duration-500 ease-out"
               style={{
                 transform: `translateY(${defaultY}px) translateZ(0px)`,
-                /* CSS hover transforms are handled in a style block below */
               }}
             >
               <span className="font-[--font-mono] text-[11px] text-[--mist-dim]">{card.label}</span>
@@ -99,16 +98,19 @@ const MOCK_EVENTS = [
 
 function TerminalCard() {
   const [lines, setLines] = useState([MOCK_EVENTS[0]]);
+  const [stats, setStats] = useState({ total_paid: 0, total_drivers: 0 });
   const eventIndex = useRef(1);
 
   useEffect(() => {
+    // Fetch live platform stats
+    analyticsApi.publicStats().then(r => setStats(r.data)).catch(() => {});
+
     const timer = setInterval(() => {
       setLines(prev => {
         const nextLine = MOCK_EVENTS[eventIndex.current];
         eventIndex.current = (eventIndex.current + 1) % MOCK_EVENTS.length;
         const newArray = [...prev, nextLine];
-        if (newArray.length > 7) return newArray.slice(newArray.length - 7);
-        return newArray;
+        return newArray.length > 7 ? newArray.slice(newArray.length - 7) : newArray;
       });
     }, 2500);
     return () => clearInterval(timer);
@@ -142,7 +144,6 @@ function TerminalCard() {
             </div>
           );
         })}
-        {/* Blinking Cursor */}
         <div className="font-[--font-mono] text-[11.5px] text-[--orange] animate-blink leading-none mt-1">_</div>
       </div>
 
@@ -150,11 +151,15 @@ function TerminalCard() {
       <div className="flex gap-6 mt-auto">
         <div>
           <p className="font-[--font-mono] text-[10px] text-[--mist-ghost] mb-1 uppercase tracking-widest">Total Paid</p>
-          <span className="font-[--font-display] text-[28px] text-[--green] leading-none">₹4,23,000</span>
+          <span className="font-[--font-display] text-[28px] text-[--green] leading-none">
+            {stats.total_paid ? formatINR(stats.total_paid) : '₹—'}
+          </span>
         </div>
         <div>
           <p className="font-[--font-mono] text-[10px] text-[--mist-ghost] mb-1 uppercase tracking-widest">Drivers</p>
-          <span className="font-[--font-display] text-[28px] text-[--orange] leading-none">1,247</span>
+          <span className="font-[--font-display] text-[28px] text-[--orange] leading-none">
+            {stats.total_drivers ? stats.total_drivers.toLocaleString() : '—'}
+          </span>
         </div>
       </div>
 

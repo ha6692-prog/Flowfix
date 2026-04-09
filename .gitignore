@@ -1,0 +1,20 @@
+# Node / React
+node_modules/
+.env.local
+.env.*.local
+dist/
+build/
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+db.sqlite3
+.venv/
+env/
+venv/
+.env
+
+# OS
+.DS_Store
+Thumbs.db
