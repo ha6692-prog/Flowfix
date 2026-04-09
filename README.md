@@ -534,56 +534,50 @@ Final Payout = max(Fixed Base Payout, AI-Predicted Income Loss)
 
 | Layer | Technology | Justification |
 |---|---|---|
-| Mobile App | React Native | Single codebase for iOS + Android |
-| Backend API | Node.js + Express | Async event handling for real-time EDZ processing |
-| Database | PostgreSQL + Redis | ACID compliance for financial data + sub-ms EDZ cache |
-| ML Models | Python + XGBoost + scikit-learn | Production-grade, deployable as microservices |
-| Real-time Engine | Node.js + Redis Pub/Sub | 15-minute EDZ refresh cycle per zone |
-| Weather | IMD API (primary) + OpenWeatherMap (fallback) | IMD most accurate for Indian hyperlocal data |
+| Web Frontend | React + Vite + TailwindCSS | Fast, modern web application for workers |
+| Backend API | Django (Python) | Robust framework for complex logic and API delivery |
+| Database | PostgreSQL + Redis (via Daphne/Channels) | Scalable data storage and real-time WebSockets |
+| ML Models | Python + Scikit-learn / XGBoost | Integrated directly or via microservices |
+| Real-time Engine | Django Channels | Handles real-time telemetry and EDZ updates natively |
+| Weather | IMD API (primary) + OpenWeatherMap | IMD most accurate for Indian hyperlocal data |
 | Traffic Data | Google Maps Traffic API (mock) | Detects road closures, congestion for zone accessibility |
-| Civic Alerts | NDMA API + Google Maps Road Closures API | Dual-source civic disruption confirmation |
-| Platform Mock | Simulated REST API server | Mimics Swiggy order volume + operational status |
+| Civic Alerts | NDMA API + Google Maps Road Closures | Dual-source civic disruption confirmation |
+| Platform Mock | Simulated REST API + Mock Data | Mimics Swiggy order volume + operational status |
 | Payments | Razorpay UPI (sandbox) | Best UPI rails for instant gig worker payouts |
 | Notifications | WhatsApp Business API (Meta) | Higher open rate than SMS among gig workers |
-| Dashboard | React + Recharts | Lightweight insurer analytics |
+| Dashboard | React + Plotly/Recharts | High-performance visualization in the frontend |
 
 ---
 
 ## 14. 📁 Repository Structure
 
-```
-gigshield/
-├── client/                     # React Native mobile app
-│   ├── screens/
-│   │   ├── Onboarding/         # Registration, KYC, Swiggy ID
-│   │   ├── Policy/             # Weekly plan, premium display
-│   │   ├── Dashboard/          # Payout history, Livability Map, Coaching
-│   │   └── Claims/             # Status, explanation, appeal
-│   └── components/
-├── server/                     # Node.js backend
-│   ├── edz/                    # Earning Dead Zone engine
-│   │   ├── signal-collector.js
-│   │   ├── edz-scorer.js
-│   │   └── trigger-pipeline.js
-│   ├── ml/                     # Python ML microservices
-│   │   ├── risk_profiler.py
-│   │   ├── premium_engine.py
-│   │   ├── trustscore_engine.py
-│   │   ├── income_predictor.py
-│   │   ├── fraud_detector.py
-│   │   └── risk_coach.py
-│   ├── payments/               # Razorpay UPI integration
-│   ├── notifications/          # WhatsApp Business API
-│   └── mocks/                  # Simulated Swiggy/IMD/NDMA/CPCB APIs
-├── analytics/                  # Insurer dashboard (React + Recharts)
-├── data/
-│   ├── synthetic/              # Generated training datasets
-│   └── zone_risk_seeds/        # Chennai zone risk seed data
-└── docs/
-    ├── architecture.md
-    ├── edz-scoring.md
-    ├── anti-spoofing.md
-    └── income-floor.md
+```text
+gigshield-app/                  # React (Vite) Frontend
+├── src/
+│   ├── components/             # Reusable UI components (IntelligenceGrid, etc.)
+│   ├── pages/                  # Main views (Dashboard, Claims, Profile)
+│   ├── context/                # Global state management
+│   ├── config/                 # Environment and API configurations
+│   └── utils/                  # Helper functions
+├── public/                     # Static assets
+└── vite.config.js              # Vite configuration
+
+gigshield/                      # Django Backend
+├── apps/                       # Organized Django applications
+│   ├── analytics/              # Real-time dashboard data and EDZ scoring
+│   ├── claims/                 # Disruption detection & claim processing
+│   ├── monitoring/             # Telemetry & GPS tracking system
+│   ├── payouts/                # Razorpay and ledger management
+│   ├── policies/               # Weekly coverage and premium logic
+│   └── users/                  # Custom gig worker profiles & KYC
+├── gigshield/                  # Core Django project settings
+│   ├── asgi.py                 # Daphne ASGI configuration
+│   ├── settings.py             # Main configuration
+│   ├── urls.py                 # Core routing
+│   └── api_urls.py             # Unified API routing
+├── monitoring_handbook.md      # Telemetry docs
+├── run_daphne.ps1              # Script to run async server
+└── manage.py                   # Django execution
 ```
 
 ---
