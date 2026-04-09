@@ -5,7 +5,7 @@
 > *"We don't just insure income — we understand it, predict it, and protect it intelligently."*
 
 **Guidewire DEVTrails 2026 | Team CodeStorm | Phase 1 Submission**
-**Persona: Swiggy Delivery Partners — Chennai, Tamil Nadu**
+**Persona: All Delivery & Gig Economy Partners — Pan-India**
 
 ---
 
@@ -15,7 +15,7 @@ India's **~11 million** platform-based delivery partners (Swiggy, Zomato, Zepto)
 
 | What Happens | What the Worker Gets |
 |---|---|
-| Cyclone hits Chennai, orders stop | ₹0 |
+| Cyclone hits coastal region, orders stop | ₹0 |
 | AQI crosses 350, dangerous to breathe | ₹0 |
 | 44°C heatwave, roads empty | ₹0 |
 | Flash flood, zone inaccessible | ₹0 |
@@ -57,22 +57,22 @@ We call this the **Earning Dead Zone (EDZ)** — a hyper-local, multi-signal sta
 
 ---
 
-## 4. 👤 Target Persona: Chennai Swiggy Delivery Partners
+## 4. 👤 Target Persona: Pan-India Delivery & Gig Partners
 
 **Primary Persona — Murugan**
-- Age 28 | Swiggy food delivery | Anna Nagar / Velachery zone
+- Age 28 | Food delivery partner (Swiggy/Zomato) | Tier-1 City Urban Zone
 - 3 years on platform | Average weekly earnings: ₹4,200
-- Peak disruption months: June–Nov (Northeast Monsoon), Oct–Nov (Cyclone season)
+- Peak disruption months: Extreme Monsoons, Heatwaves, Cyclones
 - Current safety net: None
 
 **Secondary Persona — Priya**
-- Age 34 | Part-time Swiggy partner | T. Nagar / Adyar zone
+- Age 34 | Part-time Q-commerce partner (Zepto/Blinkit) | Dense Urban Zone
 - Evening slots only | Average weekly earnings: ₹1,800
 - Cannot afford to lose even a single day — premium affordability is critical
 
 ### Scenario: Murugan's Monday Morning
 ```
-8:00 AM  — IMD issues Red Alert: 120mm rain expected in Chennai
+8:00 AM  — IMD issues Red Alert: 120mm rain expected in the city
 8:07 AM  — FlowFix EDZ engine detects:
            Rain severity 0.88 + Platform orders down 72% + Zone riders offline 68%
            EDZ Score: 0.91 → AUTO-TRIGGER
@@ -91,7 +91,7 @@ Murugan did: Absolutely nothing. Zero claim filing. Zero paperwork.
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                      ONBOARDING                              │
-│  Register (Phone + Aadhaar) → Swiggy ID Verification         │
+│  Register (Phone + Aadhaar) → Platform ID Verification       │
 │  AI Risk Profiler → Zone Risk Score (0–100)                  │
 │  Dynamic Premium Calculated → Weekly Policy Activated        │
 └──────────────────────────────────────────────────────────────┘
@@ -163,9 +163,9 @@ Final Premium = Base Rate × Zone Risk Multiplier × Personal Risk Modifier
 | New user (< 4 weeks) | +15% |
 | Prior flagged claim | +20% |
 
-**Worked Example — Murugan, Anna Nagar:**
+**Worked Example — Murugan, Urban Zone:**
 ```
-Base:            ₹25 (Swiggy food)
+Base:            ₹25 (Food delivery)
 Zone multiplier: 74/100 → 1.4x = ₹35
 Personal:        3yr tenure (−10%) + 8wk claim-free (−8%) = −₹6.30
 Final premium:   ₹28.70 → rounded to ₹29/week
@@ -423,9 +423,9 @@ This converts FlowFix from a trigger-based insurance product into a **weekly inc
 Every delivery zone gets a real-time **Livability Score (0–100)** updated every 15 minutes, combining:
 
 ```
-Anna Nagar → 22  (Severe disruption — avoid)
-T. Nagar   → 65  (Moderate — proceed with caution)
-Adyar      → 80  (Safe — good earning conditions)
+Zone A (Low-lying) → 22  (Severe disruption — avoid)
+Zone B (Urban core) → 65  (Moderate — proceed with caution)
+Zone C (Elevated)  → 80  (Safe — good earning conditions)
 ```
 
 **Score inputs:** Weather severity × 0.35 + Delivery activity level × 0.25 + Traffic conditions × 0.20 + Active worker presence × 0.20
@@ -477,7 +477,7 @@ Personalized weekly insights delivered to the worker, focused on income optimiza
    → Expected weekly gain: +₹180
 
 📍 Zone recommendation:
-   Anna Nagar showed 40% higher order density last Tuesday
+   Adjacent Zone B showed 40% higher order density last Tuesday
    → Consider shifting 2 sessions there this week
 ```
 
@@ -542,7 +542,7 @@ Final Payout = max(Fixed Base Payout, AI-Predicted Income Loss)
 | Weather | IMD API (primary) + OpenWeatherMap | IMD most accurate for Indian hyperlocal data |
 | Traffic Data | Google Maps Traffic API (mock) | Detects road closures, congestion for zone accessibility |
 | Civic Alerts | NDMA API + Google Maps Road Closures | Dual-source civic disruption confirmation |
-| Platform Mock | Simulated REST API + Mock Data | Mimics Swiggy order volume + operational status |
+| Platform Mock | Simulated REST API + Mock Data | Mimics platform order volume + operational status |
 | Payments | Razorpay UPI (sandbox) | Best UPI rails for instant gig worker payouts |
 | Notifications | WhatsApp Business API (Meta) | Higher open rate than SMS among gig workers |
 | Dashboard | React + Plotly/Recharts | High-performance visualization in the frontend |
@@ -589,11 +589,11 @@ FlowFix/                      # Django Backend
 - [x] EDZ architecture + anti-spoofing strategy
 - [x] Pricing model + parametric trigger design
 - [x] Full feature architecture
-- [ ] Mock API server (Swiggy, IMD, NDMA, CPCB, Razorpay)
+- [ ] Mock API server (Platforms, IMD, NDMA, CPCB, Razorpay)
 - [ ] Synthetic training dataset generation
 
 ### Phase 2 — Core Build
-- [ ] Worker onboarding (KYC + Swiggy ID + zone detection)
+- [ ] Worker onboarding (KYC + Platform ID + zone detection)
 - [ ] 3-layer premium calculation engine
 - [ ] EDZ engine with 5-signal aggregation (mock data)
 - [ ] Auto-trigger → UPI payout pipeline
@@ -612,7 +612,7 @@ FlowFix/                      # Django Backend
 - [ ] Zone Community Trust Score system
 - [ ] Fraud Surge Shield mode
 - [ ] Insurer analytics dashboard
-- [ ] End-to-end demo: Murugan's Chennai monsoon scenario
+- [ ] End-to-end demo: Murugan's Indian monsoon scenario
 - [ ] Final documentation + presentation
 
 ---
@@ -655,4 +655,4 @@ FlowFix transforms insurance from a reactive payout system into a proactive fina
 ---
 
 *Built by Team CodeStorm for Guidewire DEVTrails 2026 — "AI-Powered Insurance for India's Gig Economy"*
-*Persona: Swiggy Delivery Partners | Primary Zone: Chennai, Tamil Nadu*
+*Persona: All Delivery & Gig Economy Partners | Primary Zone: Pan-India*
