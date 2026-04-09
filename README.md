@@ -1,6 +1,6 @@
-# 🛡️ GigShield — AI-Powered Income Intelligence & Parametric Insurance for Gig Workers
+# 🛡️ FlowFix — AI-Powered Income Intelligence & Parametric Insurance for Gig Workers
 
->GigShield is a hyperlocal, AI-powered income protection system that detects earning dead zones in real-time and compensates gig workers instantly — before income loss becomes financial stress.
+>FlowFix is a hyperlocal, AI-powered income protection system that detects earning dead zones in real-time and compensates gig workers instantly — before income loss becomes financial stress.
 
 > *"We don't just insure income — we understand it, predict it, and protect it intelligently."*
 
@@ -27,7 +27,7 @@ India's **~11 million** platform-based delivery partners (Swiggy, Zomato, Zepto)
 - Fixed payouts ignore actual income loss (peak vs. off-peak hours)
 - No system proactively helps workers *avoid* income loss before it happens
 
-GigShield closes all five gaps simultaneously.
+FlowFix closes all five gaps simultaneously.
 
 ---
 
@@ -38,7 +38,7 @@ GigShield closes all five gaps simultaneously.
 - Rise of GPS spoofing fraud in location-based systems
 - Availability of real-time APIs + mobile sensors enabling parametric automation
 
-GigShield exists because technology has finally caught up with the problem.
+FlowFix exists because technology has finally caught up with the problem.
 
 ---
 
@@ -46,12 +46,12 @@ GigShield exists because technology has finally caught up with the problem.
 
 Most solutions will build: `Weather API threshold crossed → payout`. That's single-signal, fraud-vulnerable, and city-level imprecise.
 
-**GigShield's insight:** What matters is whether *this specific worker, in their specific 2km delivery zone, is physically and economically unable to earn right now.*
+**FlowFix's insight:** What matters is whether *this specific worker, in their specific 2km delivery zone, is physically and economically unable to earn right now.*
 
-We call this the **Earning Dead Zone (EDZ)** — a hyper-local, multi-signal state assessed every 15 minutes per zone. GigShield doesn't measure rain. It measures earning impossibility.
+We call this the **Earning Dead Zone (EDZ)** — a hyper-local, multi-signal state assessed every 15 minutes per zone. FlowFix doesn't measure rain. It measures earning impossibility.
 
 > ⚠️ **Coverage Golden Rule: LOSS OF INCOME ONLY.**
-> GigShield strictly covers lost wages caused by external disruptions.
+> FlowFix strictly covers lost wages caused by external disruptions.
 > Vehicle repairs, health bills, accidents, and life insurance are explicitly excluded.
 > Every rupee paid out represents hours a worker could not earn — nothing else.
 
@@ -73,7 +73,7 @@ We call this the **Earning Dead Zone (EDZ)** — a hyper-local, multi-signal sta
 ### Scenario: Murugan's Monday Morning
 ```
 8:00 AM  — IMD issues Red Alert: 120mm rain expected in Chennai
-8:07 AM  — GigShield EDZ engine detects:
+8:07 AM  — FlowFix EDZ engine detects:
            Rain severity 0.88 + Platform orders down 72% + Zone riders offline 68%
            EDZ Score: 0.91 → AUTO-TRIGGER
 8:17 AM  — Murugan receives: "₹50 bridge credited to UPI instantly"
@@ -173,7 +173,7 @@ Final premium:   ₹28.70 → rounded to ₹29/week
 
 **Fairness guardrail:** Premium cannot increase more than 25% week-over-week for existing users.
 
-# How GigShield Works (End-to-End)
+# How FlowFix Works (End-to-End)
 1)  Worker subscribes to weekly plan (₹20–₹30)
 2) System continuously calculates EDZ score using 5 real-time signals
 3)  If EDZ ≥ 0.78 → disruption automatically detected
@@ -261,7 +261,7 @@ TrustScore = (
 ### The Threat
 A coordinated syndicate of workers uses GPS spoofing apps to fake their location inside a declared red-alert zone while sitting at home, triggering mass false payouts and draining the liquidity pool.
 
-### Why GigShield is Structurally Resistant
+### Why FlowFix is Structurally Resistant
 
 #### 8.1 The Differentiation: Genuine Partner vs. Spoofer
 
@@ -344,7 +344,7 @@ Every honest worker wrongly flagged → appeal vindicates them
 
 ---
 
-## 10. 🌟 Advanced Innovation Features (GigShield Intelligence Layer)
+## 10. 🌟 Advanced Innovation Features (FlowFix Intelligence Layer)
 
 ### Feature 1: Smart Work Advisory Engine
 Proactive 48-hour risk forecast pushed to the worker's app with actionable guidance:
@@ -356,7 +356,7 @@ Proactive 48-hour risk forecast pushed to the worker's app with actionable guida
    Forecast trigger probability: 78%
 ```
 
-Transforms GigShield from a passive insurance product into an **active financial planning tool** for workers who live day-to-day.
+Transforms FlowFix from a passive insurance product into an **active financial planning tool** for workers who live day-to-day.
 
 ---
 
@@ -405,17 +405,17 @@ Ensures a worker never falls below a guaranteed weekly income threshold, regardl
 
 ```
 If Weekly Earnings < Guaranteed Floor Threshold:
-    GigShield pays the difference
+    FlowFix pays the difference
 
 Example:
   Murugan's expected weekly earnings:  ₹4,000
   Actual earnings after disruptions:   ₹2,800
-  GigShield pays:                      ₹1,200
+  FlowFix pays:                      ₹1,200
 ```
 
 **Why this is different:** Standard parametric insurance pays per trigger event. The Income Floor Guarantee is a *weekly safety net* — it looks at the full week and ensures cumulative losses are covered even if no single disruption crossed an individual threshold.
 
-This converts GigShield from a trigger-based insurance product into a **weekly income stability system**.
+This converts FlowFix from a trigger-based insurance product into a **weekly income stability system**.
 
 ---
 
@@ -489,9 +489,9 @@ Personalized weekly insights delivered to the worker, focused on income optimiza
 
 **The philosophical shift:**
 - ❌ Old insurance model: you lose income → we compensate
-- ✅ GigShield model: we predict the loss → coach you to avoid it → compensate what's unavoidable
+- ✅ FlowFix model: we predict the loss → coach you to avoid it → compensate what's unavoidable
 
-This moves GigShield from **loss compensation** to **income optimization**. Workers who use the coaching feature earn more even without triggering a claim — which builds loyalty and reduces churn.
+This moves FlowFix from **loss compensation** to **income optimization**. Workers who use the coaching feature earn more even without triggering a claim — which builds loyalty and reduces churn.
 
 ---
 
@@ -552,7 +552,7 @@ Final Payout = max(Fixed Base Payout, AI-Predicted Income Loss)
 ## 14. 📁 Repository Structure
 
 ```text
-gigshield-app/                  # React (Vite) Frontend
+FlowFix-app/                  # React (Vite) Frontend
 ├── src/
 │   ├── components/             # Reusable UI components (IntelligenceGrid, etc.)
 │   ├── pages/                  # Main views (Dashboard, Claims, Profile)
@@ -562,7 +562,7 @@ gigshield-app/                  # React (Vite) Frontend
 ├── public/                     # Static assets
 └── vite.config.js              # Vite configuration
 
-gigshield/                      # Django Backend
+FlowFix/                      # Django Backend
 ├── apps/                       # Organized Django applications
 │   ├── analytics/              # Real-time dashboard data and EDZ scoring
 │   ├── claims/                 # Disruption detection & claim processing
@@ -570,7 +570,7 @@ gigshield/                      # Django Backend
 │   ├── payouts/                # Razorpay and ledger management
 │   ├── policies/               # Weekly coverage and premium logic
 │   └── users/                  # Custom gig worker profiles & KYC
-├── gigshield/                  # Core Django project settings
+├── FlowFix/                  # Core Django project settings
 │   ├── asgi.py                 # Daphne ASGI configuration
 │   ├── settings.py             # Main configuration
 │   ├── urls.py                 # Core routing
@@ -626,9 +626,9 @@ gigshield/                      # Django Backend
 
 ---
 
-## 17. 📌 Why GigShield Wins
+## 17. 📌 Why FlowFix Wins
 
-| Dimension | Generic Solution | GigShield |
+| Dimension | Generic Solution | FlowFix |
 |---|---|---|
 | Trigger | City-level weather API | Hyperlocal 5-signal EDZ engine |
 | Fraud defense | GPS verification | Behavioral DNA + syndicate graph detection |
@@ -641,7 +641,7 @@ gigshield/                      # Django Backend
 | Anti-spoof | GPS check | 4 non-spoofable signals required |
 | Community | Individual policy | Zone Trust Score with collective incentives |
 
-GigShield is not just insurance.
+FlowFix is not just insurance.
 It is a real-time income protection and optimization system built for workers who cannot afford uncertainty.
 
 By combining:
@@ -649,9 +649,9 @@ Hyperlocal AI risk detection
 Fraud-resilient trust architecture
 Instant liquidity support
 Predictive income coaching
-GigShield transforms insurance from a reactive payout system into a proactive financial safety net.
+FlowFix transforms insurance from a reactive payout system into a proactive financial safety net.
 
-> In a country where millions live week-to-week, GigShield ensures that a bad day doesn’t become a bad week.
+> In a country where millions live week-to-week, FlowFix ensures that a bad day doesn’t become a bad week.
 ---
 
 *Built by Team CodeStorm for Guidewire DEVTrails 2026 — "AI-Powered Insurance for India's Gig Economy"*
