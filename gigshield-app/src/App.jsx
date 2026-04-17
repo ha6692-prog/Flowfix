@@ -3,7 +3,9 @@ import Navbar from './components/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
+import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
+import AdminDashboard from './pages/AdminDashboard'
 import ActiveClaim from './pages/ActiveClaim'
 import Wallet from './pages/Wallet'
 import Claims from './pages/Claims'
@@ -17,8 +19,9 @@ export default function App() {
           {/* Public */}
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
 
-          {/* Protected */}
+          {/* Protected — workers */}
           <Route path="/dashboard" element={
             <ProtectedRoute><Dashboard /></ProtectedRoute>
           } />
@@ -30,6 +33,11 @@ export default function App() {
           } />
           <Route path="/claims" element={
             <ProtectedRoute><Claims /></ProtectedRoute>
+          } />
+
+          {/* Protected — admin only */}
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>
           } />
         </Routes>
       </div>

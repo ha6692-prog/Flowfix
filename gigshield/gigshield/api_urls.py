@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.reverse import reverse
 from rest_framework.permissions import AllowAny
 
-from apps.users.views import RegisterView, LoginView, DriverProfileView
+from apps.users.views import RegisterView, LoginView, DriverProfileView, SimpleRegisterView, DriverListView
 from apps.policies.views import PolicyPlanViewSet, ActivatePolicyView, MyPolicyView, CancelPolicyView
 from apps.monitoring.views import ActivityBeaconView, ZoneEDZView
 from apps.claims.views import MyClaimsView, ActiveClaimView
@@ -23,6 +23,7 @@ class APIRoot(APIView):
         return Response({
             'auth': {
                 'register': reverse('auth-register', request=request),
+                'simple_register': reverse('auth-simple-register', request=request),
                 'login': reverse('auth-login', request=request),
                 'refresh': reverse('token-refresh', request=request),
             },
@@ -58,11 +59,13 @@ urlpatterns = [
 
     # ── Auth ──────────────────────────────────────────────────────────────────
     path('auth/register/', RegisterView.as_view(), name='auth-register'),
+    path('auth/simple-register/', SimpleRegisterView.as_view(), name='auth-simple-register'),
     path('auth/login/', LoginView.as_view(), name='auth-login'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
 
     # ── Driver ────────────────────────────────────────────────────────────────
     path('drivers/me/', DriverProfileView.as_view(), name='driver-me'),
+    path('drivers/admin/list/', DriverListView.as_view(), name='admin-driver-list'),
 
     # ── Policies ──────────────────────────────────────────────────────────────
     path('policies/activate/', ActivatePolicyView.as_view(), name='policy-activate'),

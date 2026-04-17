@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi } from '../api/client'
+import { authApi, detectPlatform } from '../api/client'
 
 /* ── tiny eye icon ──────────────────────────────────────────────────────── */
 const EyeIcon = ({ open }) =>
@@ -29,6 +29,7 @@ const PlatformBadge = ({ name }) => {
   const colors = {
     Zomato: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-400',
     Swiggy: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
+    Admin:  'from-violet-500/20 to-violet-600/10 border-violet-500/30 text-violet-300',
   }
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r border ${colors[name] || 'border-slate-500/30 text-slate-400'}`}>
@@ -39,9 +40,9 @@ const PlatformBadge = ({ name }) => {
 
 /* ── Quick-login test user chips ────────────────────────────────────────── */
 const TEST_USERS = [
-  { label: 'Prateek', tier: 'Gold · 4 claims',     platformId: 'ZMT-DRV-0001', platform: 'Zomato',  color: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400' },
-  { label: 'Ananya',  tier: 'Silver · 2 claims',   platformId: 'SWG-DRV-0002', platform: 'Swiggy',  color: 'from-slate-500/20 to-slate-600/10 border-slate-400/30 text-slate-300' },
-  { label: 'Kiran',   tier: 'Platinum · 5 claims', platformId: 'ZMT-DRV-0003', platform: 'Zomato',  color: 'from-violet-500/20 to-violet-600/10 border-violet-400/30 text-violet-300' },
+  { label: 'Prateek', tier: 'Gold · 4 claims',   platformId: 'ZMT-DRV-0001', platform: 'Zomato',  color: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400' },
+  { label: 'Ananya',  tier: 'Silver · 2 claims', platformId: 'SWG-DRV-0002', platform: 'Swiggy',  color: 'from-slate-500/20 to-slate-600/10 border-slate-400/30 text-slate-300' },
+  { label: 'Admin',   tier: 'Platform Admin',    platformId: 'ADMIN-001',     platform: 'Admin',   color: 'from-violet-500/20 to-violet-600/10 border-violet-400/30 text-violet-300' },
 ]
 
 export default function Login() {
@@ -52,7 +53,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
-  const fill = (platformId) => setForm({ platform_id: platformId, password: 'test123' })
+  const fill = (platformId) => setForm({ platform_id: platformId, password: 'gigshield123' })
 
   const submit = async (e) => {
     e.preventDefault()
@@ -64,10 +65,13 @@ export default function Login() {
     setLoading(true)
     try {
       const { data } = await authApi.login({ platform_id: form.platform_id.trim(), password: form.password })
+      // Determine role from platform_id prefix
+      const role = form.platform_id.toUpperCase().startsWith('ADMIN-') ? 'admin' : 'worker'
       localStorage.setItem('gs_access',  data.access)
       localStorage.setItem('gs_refresh', data.refresh)
       localStorage.setItem('gs_driver',  JSON.stringify(data.driver))
-      navigate('/dashboard', { replace: true })
+      localStorage.setItem('gs_role',    role)
+      navigate(role === 'admin' ? '/admin-dashboard' : '/dashboard', { replace: true })
     } catch (err) {
       const msg =
         err.response?.data?.non_field_errors?.[0] ||
@@ -134,7 +138,7 @@ export default function Login() {
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-600 mt-2 text-center">Click a chip → auto-fills ID + password <code className="text-slate-400">test123</code></p>
+            <p className="text-[11px] text-slate-600 mt-2 text-center">Click a chip → auto-fills ID + password <code className="text-slate-400">gigshield123</code></p>
           </div>
 
           {/* Divider */}
@@ -230,6 +234,9 @@ export default function Login() {
           <div className="mt-6 flex flex-col items-center gap-2 text-sm text-slate-500">
             <Link to="/" className="hover:text-slate-400 transition-colors text-xs">
               ← Back to home
+            </Link>
+            <Link to="/signup" className="hover:text-slate-400 transition-colors text-xs">
+              Don't have an account? <span className="text-cyan-400">Create one</span>
             </Link>
           </div>
         </div>

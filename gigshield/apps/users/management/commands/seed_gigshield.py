@@ -82,16 +82,18 @@ class Command(BaseCommand):
         from apps.policies.models import DriverPolicy, ReserveWallet
 
         drivers_data = [
-            {'name': 'Ravi Kumar',    'phone': '9100000001', 'months': 1,  'tier': 'bronze',   'plan': 'Basic',    'zone': 0},
-            {'name': 'Priya Devi',    'phone': '9100000002', 'months': 5,  'tier': 'silver',   'plan': 'Standard', 'zone': 1},
-            {'name': 'Suresh S',      'phone': '9100000003', 'months': 9,  'tier': 'gold',     'plan': 'Full',     'zone': 2},
-            {'name': 'Meena R',       'phone': '9100000004', 'months': 14, 'tier': 'platinum', 'plan': 'Full',     'zone': 3},
-            {'name': 'Arjun T',       'phone': '9100000005', 'months': 3,  'tier': 'bronze',   'plan': 'Basic',    'zone': 4},
-            {'name': 'Kavitha M',     'phone': '9100000006', 'months': 6,  'tier': 'silver',   'plan': 'Standard', 'zone': 0},
-            {'name': 'Dinesh P',      'phone': '9100000007', 'months': 11, 'tier': 'gold',     'plan': 'Full',     'zone': 1},
-            {'name': 'Lakshmi A',     'phone': '9100000008', 'months': 18, 'tier': 'platinum', 'plan': 'Full',     'zone': 2},
-            {'name': 'Bala G',        'phone': '9100000009', 'months': 2,  'tier': 'bronze',   'plan': 'Basic',    'zone': 3},
-            {'name': 'Vijaya C',      'phone': '9100000010', 'months': 8,  'tier': 'gold',     'plan': 'Standard', 'zone': 4},
+            {'name': 'Ravi Kumar',    'phone': '9100000001', 'platform_id': 'ZMT-DRV-0001', 'months': 1,  'tier': 'bronze',   'plan': 'Basic',    'zone': 0},
+            {'name': 'Priya Devi',    'phone': '9100000002', 'platform_id': 'SWG-DRV-0002', 'months': 5,  'tier': 'silver',   'plan': 'Standard', 'zone': 1},
+            {'name': 'Suresh S',      'phone': '9100000003', 'platform_id': 'ZMT-DRV-0003', 'months': 9,  'tier': 'gold',     'plan': 'Full',     'zone': 2},
+            {'name': 'Meena R',       'phone': '9100000004', 'platform_id': 'BLK-DRV-0004', 'months': 14, 'tier': 'platinum', 'plan': 'Full',     'zone': 3},
+            {'name': 'Arjun T',       'phone': '9100000005', 'platform_id': 'SWG-DRV-0005', 'months': 3,  'tier': 'bronze',   'plan': 'Basic',    'zone': 4},
+            {'name': 'Kavitha M',     'phone': '9100000006', 'platform_id': 'ZMT-DRV-0006', 'months': 6,  'tier': 'silver',   'plan': 'Standard', 'zone': 0},
+            {'name': 'Dinesh P',      'phone': '9100000007', 'platform_id': 'BLK-DRV-0007', 'months': 11, 'tier': 'gold',     'plan': 'Full',     'zone': 1},
+            {'name': 'Lakshmi A',     'phone': '9100000008', 'platform_id': 'ZMT-DRV-0008', 'months': 18, 'tier': 'platinum', 'plan': 'Full',     'zone': 2},
+            {'name': 'Bala G',        'phone': '9100000009', 'platform_id': 'SWG-DRV-0009', 'months': 2,  'tier': 'bronze',   'plan': 'Basic',    'zone': 3},
+            {'name': 'Vijaya C',      'phone': '9100000010', 'platform_id': 'ZMT-DRV-0010', 'months': 8,  'tier': 'gold',     'plan': 'Standard', 'zone': 4},
+            # Admin test account
+            {'name': 'Platform Admin', 'phone': '9000000001', 'platform_id': 'ADMIN-001',   'months': 24, 'tier': 'platinum', 'plan': 'Full',     'zone': 0},
         ]
 
         tier_balances = {'bronze': 24, 'silver': 50, 'gold': 104, 'platinum': 192}
@@ -107,6 +109,7 @@ class Command(BaseCommand):
 
             driver = Driver(
                 phone=dd['phone'],
+                platform_id=dd['platform_id'],
                 name=dd['name'],
                 city=city,
                 zone=zones[dd['zone']],

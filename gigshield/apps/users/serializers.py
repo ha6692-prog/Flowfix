@@ -1,3 +1,5 @@
+import hashlib
+import uuid
 from django.utils import timezone
 from rest_framework import serializers
 from .models import City, Zone, Driver, DriverActivity
@@ -144,3 +146,51 @@ class ActivityBeaconSerializer(serializers.ModelSerializer):
         # Update driver's last beacon timestamp
         Driver.objects.filter(pk=driver.pk).update(last_beacon_at=timezone.now())
         return activity
+
+
+class SimpleRegisterSerializer(serializers.Serializer):
+    """
+    Simplified driver registration for the signup page.
+    Only requires: name, platform_id, phone, password.
+    Auto-fills aadhaar_hash, device_fingerprint, city/zone, consent.
+    """
+    name = serializers.CharField(max_length=200)
+    platform_id = serializers.CharField(max_length=50)
+    phone = serializers.CharField(max_length=15)
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    def validate_platform_id(self, value):
+        if Driver.objects.filter(platform_id=value).exists():
+            raise serializers.ValidationError('A driver with this Platform ID already exists.')
+        return value
+
+    def validate_phone(self, value):
+        if Driver.objects.filter(phone=value).exists():
+            raise serializers.ValidationError('A driver with this phone number already exists.')
+        return value
+
+    def create(self, validated_data):
+        from .models import City, Zone
+        # Auto-pick first active city and its first zone
+        city = City.objects.filter(is_active=True).first()
+        zone = Zone.objects.filter(city=city).first() if city else None
+
+        # Deterministic aadhaar hash from phone + platform_id (test only)
+        raw = f"{validated_data['phone']}_{validated_data['platform_id']}_SIGNUP"
+        aadhaar_hash = hashlib.sha256(raw.encode()).hexdigest()
+
+        driver = Driver(
+            name=validated_data['name'],
+            platform_id=validated_data['platform_id'],
+            phone=validated_data['phone'],
+            city=city,
+            zone=zone,
+            aadhaar_hash=aadhaar_hash,
+            device_fingerprint=f'signup_{uuid.uuid4().hex}',
+            is_active=True,
+            consent_given=True,
+            consent_timestamp=timezone.now(),
+        )
+        driver.set_password(validated_data['password'])
+        driver.save()
+        return driver

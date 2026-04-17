@@ -1,10 +1,13 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { getRole } from '../api/client'
 
 export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
   const isAuth = !!localStorage.getItem('gs_access')
+  const role = isAuth ? getRole() : 'worker'
+  const homeLink = role === 'admin' ? '/admin-dashboard' : '/dashboard'
   const [scrolled, setScrolled] = useState(false)
   const isLanding = location.pathname === '/'
 
@@ -17,18 +20,22 @@ export default function Navbar() {
   }, [])
 
   if (!isLanding) {
-    // Legacy simple navbar for authenticated app pages to avoid breaking dashboard layout
+    // Legacy simple navbar for authenticated app pages
     return (
       <nav className="fixed top-0 inset-x-0 z-50 border-b border-[#ffffff0f] backdrop-blur-xl bg-[#0a0e1a]/80">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
+          <Link to={homeLink} className="flex items-center gap-2">
             <span className="text-white font-bold text-lg font-[--font-display]">FlowFix</span>
           </Link>
           <div className="flex items-center gap-6">
-            <Link to="/dashboard" className="text-sm font-['IBM_Plex_Mono'] text-white">Home</Link>
-            <Link to="/wallet" className="text-sm font-['IBM_Plex_Mono'] text-slate-400 hover:text-white">My Savings</Link>
-            <Link to="/claims" className="text-sm font-['IBM_Plex_Mono'] text-slate-400 hover:text-white">Payments</Link>
-            <Link to="/claim/active" className="text-sm font-['IBM_Plex_Mono'] text-slate-400 hover:text-white">Payout Tracker</Link>
+            <Link to={homeLink} className="text-sm font-['IBM_Plex_Mono'] text-white">Home</Link>
+            {role !== 'admin' && (
+              <>
+                <Link to="/wallet" className="text-sm font-['IBM_Plex_Mono'] text-slate-400 hover:text-white">My Savings</Link>
+                <Link to="/claims" className="text-sm font-['IBM_Plex_Mono'] text-slate-400 hover:text-white">Payments</Link>
+                <Link to="/claim/active" className="text-sm font-['IBM_Plex_Mono'] text-slate-400 hover:text-white">Payout Tracker</Link>
+              </>
+            )}
             <button 
               onClick={() => {
                 localStorage.clear()
@@ -73,7 +80,7 @@ export default function Navbar() {
       <div className="flex items-center gap-4">
         {isAuth ? (
           <Link 
-            to="/dashboard" 
+            to={homeLink} 
             className="font-[--font-mono] text-[13px] font-semibold rounded-full px-6 py-2.5 text-[#0d0e0f] border-none cursor-pointer transition-all duration-200"
             style={{
               background: 'linear-gradient(135deg, #f97316, #ea580c)',

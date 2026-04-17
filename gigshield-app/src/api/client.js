@@ -46,8 +46,9 @@ api.interceptors.response.use(
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login:    (data) => api.post('auth/login/', data),
-  register: (data) => api.post('auth/register/', data),
+  login:          (data) => api.post('auth/login/', data),
+  register:       (data) => api.post('auth/register/', data),
+  simpleRegister: (data) => api.post('auth/simple-register/', data),
 }
 
 // ── Policies ─────────────────────────────────────────────────────────────────
@@ -74,6 +75,31 @@ export const claimsApi = {
 export const analyticsApi = {
   publicStats: () => api.get('stats/public/'),
   poolHealth:  () => api.get('dashboard/pool-health/'),
+}
+
+// ── Admin ────────────────────────────────────────────────────────────────────
+export const adminApi = {
+  listDrivers: () => api.get('drivers/admin/list/'),
+}
+
+// ── Role helpers ──────────────────────────────────────────────────────────────
+// Role is determined from the platform_id prefix stored in localStorage.
+// ADMIN- prefix → admin | everything else → worker
+export const getRole = () => {
+  const stored = localStorage.getItem('gs_role')
+  if (stored) return stored
+  const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const pid = (driver.platform_id || '').toUpperCase()
+  return pid.startsWith('ADMIN-') ? 'admin' : 'worker'
+}
+
+export const detectPlatform = (platformId = '') => {
+  const pid = platformId.toUpperCase()
+  if (pid.startsWith('ZMT')) return 'Zomato'
+  if (pid.startsWith('SWG')) return 'Swiggy'
+  if (pid.startsWith('BLK')) return 'Blinkit'
+  if (pid.startsWith('ADMIN')) return 'Admin'
+  return null
 }
 
 // ── Amount formatter ──────────────────────────────────────────────────────────

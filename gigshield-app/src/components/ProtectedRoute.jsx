@@ -1,7 +1,16 @@
 import { Navigate } from 'react-router-dom'
+import { getRole } from '../api/client'
 
-export default function ProtectedRoute({ children }) {
+export default function ProtectedRoute({ children, requiredRole }) {
   const token = localStorage.getItem('gs_access')
   if (!token) return <Navigate to="/login" replace />
+
+  if (requiredRole) {
+    const role = getRole()
+    if (role !== requiredRole) {
+      return <Navigate to={role === 'admin' ? '/admin-dashboard' : '/dashboard'} replace />
+    }
+  }
+
   return children
 }

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { policiesApi, monitoringApi, formatINR } from '../api/client'
+import { policiesApi, monitoringApi, analyticsApi, formatINR } from '../api/client'
 import { TierBadge } from '../components/TrustCounter'
 import { useState, useEffect } from 'react'
 

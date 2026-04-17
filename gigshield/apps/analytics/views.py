@@ -20,17 +20,37 @@ class PublicStatsView(APIView):
         cache_key = 'public_stats_v1'
         data = cache.get(cache_key)
         if not data:
+            # Original public metrics
             paid_claims = Claim.objects.filter(status='paid')
             total_paid = paid_claims.aggregate(s=Sum('total_payout_amount'))['s'] or 0
             total_drivers_helped = paid_claims.values('driver').distinct().count()
-            total_drivers = Driver.objects.filter(is_active=True).count()
-            total_events = paid_claims.count()
+            
+            # Extended admin metrics
+            all_drivers = Driver.objects.count()
+            active_drivers = Driver.objects.filter(is_active=True).count()
+            fraud_flags = Driver.objects.filter(is_active=False).count()
+            
+            total_claims = Claim.objects.count()
+            pending_claims = Claim.objects.filter(status='pending').count()
+            
+            total_pool = Zone.objects.aggregate(s=Sum('pool_balance'))['s'] or 0
+            loss_ratio = float(total_paid) / float(total_pool) if total_pool else 0.0
 
             data = {
+                # New keys requested by Admin Dashboard
+                'total_drivers': all_drivers,
+                'active_drivers': active_drivers,
+                'total_claims': total_claims,
+                'total_paid_out': str(total_paid),
+                'fraud_flags': fraud_flags,
+                'pending_claims': pending_claims,
+                'loss_ratio': round(loss_ratio, 3),
+
+                # Old fallback keys
                 'total_payout_amount': str(total_paid),
                 'total_drivers_helped': total_drivers_helped,
-                'total_active_drivers': total_drivers,
-                'total_events_covered': total_events,
+                'total_active_drivers': active_drivers,
+                'total_events_covered': paid_claims.count(),
                 'platform': 'GigShield — Driver Income Protection Fund',
             }
             cache.set(cache_key, data, timeout=30)
