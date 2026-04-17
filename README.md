@@ -8,6 +8,11 @@
 **Persona: All Delivery & Gig Economy Partners — Pan-India**
 
 ---
+## Pitch Deck
+
+https://docs.google.com/presentation/d/1cWZ4sDzWSbpYPS_MoMvCZ6YMManmVMZO/edit?usp=drivesdk&ouid=109000361084008891459&rtpof=true&sd=true
+
+---
 
 ## 1. 🔴 Problem Statement
 
