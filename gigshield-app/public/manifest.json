@@ -1,0 +1,19 @@
+{
+  "name": "FlowFix — Driver Income Protection Fund",
+  "short_name": "FlowFix",
+  "description": "Parametric income protection for gig delivery drivers. Auto-triggered payouts during extreme weather disruptions.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#00d4ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/shield.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities"]
+}
