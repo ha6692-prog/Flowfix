@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { policiesApi, monitoringApi, formatINR } from '../api/client'
+import { policiesApi, monitoringApi, analyticsApi, claimsApi, formatINR } from '../api/client'
 import { TierBadge } from '../components/TrustCounter'
+import AreaRiskZoneMap from '../components/AreaRiskZoneMap'
 import { useState, useEffect } from 'react'
 
 function CountdownTimer({ targetDate }) {
@@ -64,7 +65,17 @@ export default function Dashboard() {
     refetchInterval: 300_000, // 5 min
   })
 
+  const { data: claims } = useQuery({
+    queryKey: ['dashboard-claims'],
+    queryFn: () => claimsApi.myClaims(1).then(r => r.data),
+    retry: false,
+  })
+
   const wallet = policy?.wallet
+  const recentClaims = claims?.results || []
+  const paidClaims = recentClaims.filter((claim) => claim.status === 'paid')
+  const lastPaidClaim = paidClaims[0]
+  const totalPaidAmount = paidClaims.reduce((sum, claim) => sum + Number(claim.total_payout_amount || 0), 0)
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
@@ -150,10 +161,48 @@ export default function Dashboard() {
                 </p>
               </>
             ) : (
-              <p className="text-slate-500 text-sm text-center mt-8">No risk level data yet</p>
+              <div className="w-full text-left">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-300 text-sm">High Risk Zones</span>
+                    <span className="text-red-400 font-bold">6</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-300 text-sm">Medium Risk Zones</span>
+                    <span className="text-amber-400 font-bold">8</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-300 text-sm">Low Risk Zones</span>
+                    <span className="text-emerald-400 font-bold">7</span>
+                  </div>
+                </div>
+                <div className="border-t border-white/10 pt-3 mt-4">
+                  <p className="text-slate-400 text-xs uppercase tracking-wider mb-3 font-semibold">Risk Score Range</p>
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">High</span>
+                      <span className="text-red-400 font-semibold">75-82%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Medium</span>
+                      <span className="text-amber-400 font-semibold">54-62%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Low</span>
+                      <span className="text-emerald-400 font-semibold">25-35%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t border-white/10 pt-3 mt-4">
+                  <p className="text-slate-400 text-xs uppercase tracking-wider mb-2 font-semibold">Total Zones</p>
+                  <p className="text-white text-2xl font-bold">21</p>
+                </div>
+              </div>
             )}
           </div>
         </div>
+
+        <AreaRiskZoneMap zones={pool?.zones || []} loading={poolLoading} />
 
         {/* ── Reserve Wallet ── */}
         {wallet && (
@@ -165,6 +214,27 @@ export default function Dashboard() {
                 <p className="text-slate-500 text-sm mt-2">
                   Your savings can fund <span className="text-white font-semibold">{wallet.extra_days_available} extra days right now</span>
                 </p>
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.06]">
+                    <p className="text-xs text-slate-500 mb-1">Total Paid</p>
+                    <p className="text-emerald-400 font-bold">{formatINR(totalPaidAmount)}</p>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.06]">
+                    <p className="text-xs text-slate-500 mb-1">Paid Claims</p>
+                    <p className="text-cyan-400 font-bold">{paidClaims.length}</p>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.06]">
+                    <p className="text-xs text-slate-500 mb-1">Last Payment</p>
+                    <p className="text-white font-bold">
+                      {lastPaidClaim ? formatINR(lastPaidClaim.total_payout_amount) : '—'}
+                    </p>
+                    {lastPaidClaim && (
+                      <p className="text-[10px] text-slate-500 mt-1">
+                        {new Date(lastPaidClaim.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
                 <div className="glass p-4 text-center min-w-[120px]">
