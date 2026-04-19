@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { policiesApi, formatINR } from '../api/client'
+import { policiesApi, claimsApi, formatINR, isNotFoundError } from '../api/client'
 import { TierBadge } from '../components/TrustCounter'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getDemoProfile } from '../data/demoProfiles'
 
 /* ─────────────────────────────────────────────────────────────
    ROLLOVER BUSINESS LOGIC — HOW IT WORKS (READ THIS FIRST)
@@ -212,12 +213,35 @@ function CreditHistoryTimeline({ credits }) {
 
 export default function Wallet() {
   const driver      = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const demoProfile = getDemoProfile(driver.platform_id)
   const queryClient = useQueryClient()
   const [showCancelModal, setShowCancelModal] = useState(false)
 
   const { data: policy, isLoading } = useQuery({
     queryKey: ['my-policy'],
-    queryFn: () => policiesApi.myPolicy().then(r => r.data),
+    queryFn: async () => {
+      try {
+        const r = await policiesApi.myPolicy()
+        return r.data
+      } catch (err) {
+        if (isNotFoundError(err)) return demoProfile?.policy || null
+        throw err
+      }
+    },
+    retry: false,
+  })
+
+  const { data: claimsData } = useQuery({
+    queryKey: ['wallet-claims-history'],
+    queryFn: async () => {
+      try {
+        const r = await claimsApi.myClaims(1)
+        return r.data
+      } catch (err) {
+        if (isNotFoundError(err)) return demoProfile?.claims || { results: [] }
+        throw err
+      }
+    },
     retry: false,
   })
 
@@ -230,6 +254,7 @@ export default function Wallet() {
   })
 
   const wallet       = policy?.wallet
+  const paymentHistory = (claimsData?.results || claimsData || []).filter((c) => c.status === 'paid')
   const monthsActive = driver.months_active || policy?.months_active || 0
   const tierKey      = wallet?.tier || 'bronze'
   const weeklyCredit = wallet?.weekly_credit || TIERS[TIER_INDEX[tierKey]]?.credit || 8
@@ -278,8 +303,8 @@ export default function Wallet() {
         <div className="w-full max-w-md text-center animate-slide-up glass p-10">
           <span className="text-5xl mb-4 block">💰</span>
           <h2 className="text-2xl font-bold text-white mb-2">No Savings Buffer Yet</h2>
-          <p className="text-slate-400 mb-6">Activate a plan to start building your bonus vouchers automatically.</p>
-          <Link to="/login" className="btn-primary">Get Protected →</Link>
+          <p className="text-slate-400 mb-6">This account has no active plan yet. Activate a plan to start building bonus vouchers automatically.</p>
+          <Link to="/" className="btn-primary">Choose Plan →</Link>
         </div>
       </div>
     )
@@ -461,6 +486,33 @@ export default function Wallet() {
         <div className="glass p-6 animate-slide-up">
           <p className="text-sm text-slate-400 uppercase tracking-wider mb-5 font-semibold">Savings History</p>
           <CreditHistoryTimeline credits={wallet.credit_history || []} />
+        </div>
+
+        {/* ── Payment History ── */}
+        <div className="glass p-6 animate-slide-up">
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-sm text-slate-400 uppercase tracking-wider font-semibold">Payment History</p>
+            <Link to="/claims" className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors">View all</Link>
+          </div>
+
+          {paymentHistory.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-6">No paid payouts yet for this account.</p>
+          ) : (
+            <div className="space-y-2">
+              {paymentHistory.slice(0, 5).map((claim, idx) => (
+                <div key={claim.id || idx} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-400">Paid</p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(claim.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {claim.zone_name ? ` · ${claim.zone_name}` : ''}
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-white">{formatINR(claim.total_payout_amount || 0)}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Cancellation Warning — retention hook ── */}

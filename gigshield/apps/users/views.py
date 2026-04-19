@@ -73,6 +73,13 @@ class DriverListView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
+        platform_id = (getattr(request.user, 'platform_id', '') or '').upper()
+        if not platform_id.startswith('ADMIN-'):
+            return Response(
+                {'detail': 'You do not have permission to view driver list.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         from .models import Driver
         drivers = Driver.objects.all().order_by('-created_at')[:50]
         data = [{
