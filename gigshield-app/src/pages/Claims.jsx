@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { claimsApi, formatINR } from '../api/client'
+import { claimsApi, formatINR, isNotFoundError } from '../api/client'
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getDemoProfile } from '../data/demoProfiles'
 
 /* ── STATUS CONFIG ── */
 const STATUS_CONFIG = {
@@ -84,14 +85,25 @@ const cardVariant = {
 }
 
 export default function Claims() {
+  const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const demoProfile = getDemoProfile(driver.platform_id)
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState('All')
   const [selectedClaim, setSelectedClaim] = useState(null)
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['my-claims', page],
-    queryFn: () => claimsApi.myClaims(page).then(r => r.data),
+    queryFn: async () => {
+      try {
+        const r = await claimsApi.myClaims(page)
+        return r.data
+      } catch (err) {
+        if (isNotFoundError(err)) return demoProfile?.claims || { results: [] }
+        throw err
+      }
+    },
     keepPreviousData: true,
+    retry: false,
   })
 
   // Data processing

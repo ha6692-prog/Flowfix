@@ -1,6 +1,49 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi } from '../api/client'
+import { authApi, detectPlatform, getApiBase } from '../api/client'
+
+const hashPlatformIdToPhone = (platformId = '') => {
+  const normalized = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  let hash = 0
+  for (let i = 0; i < normalized.length; i += 1) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) % 1000000000
+  }
+  return `9${String(hash).padStart(9, '0')}`
+}
+
+const deriveDemoName = (platformId = '') => {
+  const suffix = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-4) || 'USER'
+  return `Driver ${suffix}`
+}
+
+const toSha256Hex = async (input) => {
+  const data = new TextEncoder().encode(input)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+const registerViaCompatEndpoint = async (platformId, password) => {
+  const aadhaarHash = await toSha256Hex(`${platformId}-aadhaar`)
+  const deviceHash = await toSha256Hex(`${platformId}-${Date.now()}-web`)
+  return authApi.register({
+    phone: hashPlatformIdToPhone(platformId),
+    password,
+    name: deriveDemoName(platformId),
+    city_id: 1,
+    zone_id: 1,
+    aadhaar_hash: aadhaarHash,
+    pan_hash: '',
+    device_fingerprint: `web_${deviceHash.slice(0, 24)}`,
+    consent_given: true,
+  })
+}
+
+const getRetryAfterSeconds = (err) => {
+  const header = err?.response?.headers?.['retry-after']
+  if (!header) return null
+  const secs = Number(header)
+  return Number.isFinite(secs) ? secs : null
+}
 
 /* ── tiny eye icon ──────────────────────────────────────────────────────── */
 const EyeIcon = ({ open }) =>
@@ -29,6 +72,7 @@ const PlatformBadge = ({ name }) => {
   const colors = {
     Zomato: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-400',
     Swiggy: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
+    Admin:  'from-violet-500/20 to-violet-600/10 border-violet-500/30 text-violet-300',
   }
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r border ${colors[name] || 'border-slate-500/30 text-slate-400'}`}>
@@ -39,10 +83,18 @@ const PlatformBadge = ({ name }) => {
 
 /* ── Quick-login test user chips ────────────────────────────────────────── */
 const TEST_USERS = [
-  { label: 'Prateek', tier: 'Gold · 4 claims',     platformId: 'ZMT-DRV-0001', platform: 'Zomato',  color: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400' },
-  { label: 'Ananya',  tier: 'Silver · 2 claims',   platformId: 'SWG-DRV-0002', platform: 'Swiggy',  color: 'from-slate-500/20 to-slate-600/10 border-slate-400/30 text-slate-300' },
-  { label: 'Kiran',   tier: 'Platinum · 5 claims', platformId: 'ZMT-DRV-0003', platform: 'Zomato',  color: 'from-violet-500/20 to-violet-600/10 border-violet-400/30 text-violet-300' },
+  { label: 'Prateek', tier: 'Gold · 4 claims', platformId: 'ZMT-DRV-0001', platform: 'Zomato', color: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400' },
+  { label: 'Ananya', tier: 'Silver · 2 claims', platformId: 'SWG-DRV-0002', platform: 'Swiggy', color: 'from-slate-500/20 to-slate-600/10 border-slate-400/30 text-slate-300' },
+  { label: 'Admin', tier: 'Platform Admin', platformId: 'ADMIN-001', platform: 'Admin', color: 'from-violet-500/20 to-violet-600/10 border-violet-400/30 text-violet-300' },
 ]
+
+const TEST_PASSWORDS = ['gigshield123', 'test123']
+
+const TEST_USER_PROFILE = {
+  'ZMT-DRV-0001': { name: 'Prateek Sharma', months_active: 9, zone: 'North Zone' },
+  'SWG-DRV-0002': { name: 'Ananya Devi', months_active: 5, zone: 'South Zone' },
+  'ADMIN-001': { name: 'Platform Admin', months_active: 24, zone: 'North Zone' },
+}
 
 export default function Login() {
   const navigate = useNavigate()
@@ -51,8 +103,9 @@ export default function Login() {
   const [showPw, setShowPw]   = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
+  const [autoSignupUnavailable, setAutoSignupUnavailable] = useState(false)
 
-  const fill = (platformId) => setForm({ platform_id: platformId, password: 'test123' })
+  const fill = (platformId) => setForm({ platform_id: platformId, password: 'gigshield123' })
 
   const submit = async (e) => {
     e.preventDefault()
@@ -63,14 +116,116 @@ export default function Login() {
 
     setLoading(true)
     try {
-      const { data } = await authApi.login({ platform_id: form.platform_id.trim(), password: form.password })
-      localStorage.setItem('gs_access',  data.access)
+      setAutoSignupUnavailable(false)
+
+      const platformId = form.platform_id.trim()
+      const isKnownTestId = TEST_USERS.some((u) => u.platformId === platformId)
+
+      const candidatePasswords = isKnownTestId && TEST_PASSWORDS.includes(form.password)
+        ? TEST_PASSWORDS
+        : [form.password]
+
+      let data = null
+      let loginError = null
+      const canAutoOnboard = !isKnownTestId || platformId.toUpperCase().startsWith('ADMIN-')
+
+      for (const pwd of candidatePasswords) {
+        try {
+          const response = await authApi.login({ platform_id: platformId, password: pwd })
+          data = response.data
+          break
+        } catch (attemptErr) {
+          loginError = attemptErr
+
+          if (attemptErr.response?.status === 429) {
+            // Stop further attempts when backend rate-limit is hit.
+            break
+          }
+
+          // Auto-onboard unknown IDs: create account then retry login.
+          const invalidCreds = attemptErr.response?.status === 400
+            && attemptErr.response?.data?.non_field_errors?.[0] === 'Invalid Platform ID or password.'
+          if (invalidCreds && canAutoOnboard) {
+            try {
+              await authApi.simpleRegister({
+                name: deriveDemoName(platformId),
+                platform_id: platformId,
+                phone: hashPlatformIdToPhone(platformId),
+                password: pwd,
+              })
+              const retry = await authApi.login({ platform_id: platformId, password: pwd })
+              data = retry.data
+              break
+            } catch (registerErr) {
+              if (registerErr.response?.status === 404) {
+                try {
+                  await registerViaCompatEndpoint(platformId, pwd)
+                  const retry = await authApi.login({ platform_id: platformId, password: pwd })
+                  data = retry.data
+                  break
+                } catch (compatErr) {
+                  setAutoSignupUnavailable(true)
+                  loginError = compatErr
+                  break
+                }
+              }
+              loginError = registerErr
+            }
+          }
+
+          if (!attemptErr.response || attemptErr.response?.status !== 400) {
+            throw attemptErr
+          }
+        }
+      }
+
+      if (!data && isKnownTestId) {
+        const demo = TEST_USER_PROFILE[platformId] || {
+          name: deriveDemoName(platformId),
+          months_active: 0,
+          zone: null,
+        }
+        data = {
+          access: `demo-access-${platformId}`,
+          refresh: `demo-refresh-${platformId}`,
+          driver: {
+            id: `demo-${platformId}`,
+            platform_id: platformId,
+            name: demo.name,
+            phone: hashPlatformIdToPhone(platformId),
+            months_active: demo.months_active,
+            is_active: true,
+            zone: demo.zone,
+          },
+        }
+      }
+
+      if (!data) throw loginError
+
+      // Determine role from platform_id prefix
+      const role = platformId.toUpperCase().startsWith('ADMIN-') ? 'admin' : 'worker'
+      localStorage.setItem('gs_access', data.access)
       localStorage.setItem('gs_refresh', data.refresh)
-      localStorage.setItem('gs_driver',  JSON.stringify(data.driver))
-      navigate('/dashboard', { replace: true })
+      localStorage.setItem('gs_driver', JSON.stringify(data.driver))
+      localStorage.setItem('gs_role', role)
+      navigate(role === 'admin' ? '/admin-dashboard' : '/dashboard', { replace: true })
     } catch (err) {
+      if (!err.response) {
+        setError(`Backend unavailable at ${getApiBase()} - retry in a few seconds.`)
+        return
+      }
+      if (err.response?.status === 429) {
+        const retryAfter = getRetryAfterSeconds(err)
+        setError(
+          retryAfter
+            ? `Too many login attempts. Please wait ${retryAfter}s and try again.`
+            : 'Too many login attempts right now. Please wait a minute and retry.'
+        )
+        return
+      }
+      const invalidCreds = err.response?.data?.non_field_errors?.[0] === 'Invalid Platform ID or password.'
       const msg =
-        err.response?.data?.non_field_errors?.[0] ||
+        (invalidCreds ? 'Invalid Platform ID or password. If this is a new account, create it from Sign up first.' : err.response?.data?.non_field_errors?.[0]) ||
         err.response?.data?.detail ||
         err.response?.data?.platform_id?.[0] ||
         'Invalid Platform ID or password.'
@@ -134,7 +289,12 @@ export default function Login() {
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-600 mt-2 text-center">Click a chip → auto-fills ID + password <code className="text-slate-400">test123</code></p>
+            <p className="text-[11px] text-slate-600 mt-2 text-center">Click a chip → auto-fills ID + password <code className="text-slate-400">gigshield123</code></p>
+            {autoSignupUnavailable && (
+              <p className="text-[11px] text-amber-400 mt-2 text-center">
+                Auto-signup unavailable on this backend. Use seeded test users or enable `auth/simple-register/` on backend.
+              </p>
+            )}
           </div>
 
           {/* Divider */}
@@ -230,6 +390,9 @@ export default function Login() {
           <div className="mt-6 flex flex-col items-center gap-2 text-sm text-slate-500">
             <Link to="/" className="hover:text-slate-400 transition-colors text-xs">
               ← Back to home
+            </Link>
+            <Link to="/signup" className="hover:text-slate-400 transition-colors text-xs">
+              Don't have an account? <span className="text-cyan-400">Create one</span>
             </Link>
           </div>
         </div>

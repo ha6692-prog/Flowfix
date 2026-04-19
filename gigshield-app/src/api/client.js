@@ -1,9 +1,30 @@
 import axios from 'axios'
 
 // ── API URL Configuration ────────────────────────────────────────────────────
-// Use environment variable for production backend, fallback to /api for local proxy
-const BASE = import.meta.env.VITE_API_URL || 'https://flowfix-l2vs.onrender.com'
-const API_URL = BASE.endsWith('/api') ? `${BASE}/` : `${BASE}/api/`
+const PROD_BASE = 'https://flowfix-l2vs.onrender.com'
+
+const normalizeApiUrl = (rawBase) => {
+  const trimmed = (rawBase || '').trim().replace(/\/$/, '')
+  if (!trimmed) return ''
+  return trimmed.endsWith('/api') ? `${trimmed}/` : `${trimmed}/api/`
+}
+
+const isLocalApiBase = (baseUrl) => /localhost|127\.0\.0\.1/i.test(baseUrl || '')
+
+const resolveApiBase = () => {
+  const envBase = normalizeApiUrl(import.meta.env.VITE_API_URL)
+  const prodBase = normalizeApiUrl(PROD_BASE)
+  const allowLocalApi = String(import.meta.env.VITE_ALLOW_LOCAL_API || '').toLowerCase() === 'true'
+
+  // Use live API unless local API is explicitly allowed.
+  if (envBase && isLocalApiBase(envBase) && !allowLocalApi) {
+    return prodBase
+  }
+
+  return envBase || prodBase
+}
+
+const API_URL = resolveApiBase()
 
 // ── Axios instance ────────────────────────────────────────────────────────────
 const api = axios.create({
@@ -14,7 +35,9 @@ const api = axios.create({
 // ── Request interceptor: attach JWT ──────────────────────────────────────────
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('gs_access')
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token && !token.startsWith('demo-access-')) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 
@@ -23,10 +46,21 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const original = error.config
+    const hasNoResponse = !error.response
+
+    // Recover from localhost backend offline by retrying once against live API.
+    if (hasNoResponse && !original?._apiFallbackTried && isLocalApiBase(api.defaults.baseURL)) {
+      original._apiFallbackTried = true
+      const liveBase = normalizeApiUrl(PROD_BASE)
+      api.defaults.baseURL = liveBase
+      original.baseURL = liveBase
+      return api(original)
+    }
+
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       const refresh = localStorage.getItem('gs_refresh')
-      if (refresh) {
+      if (refresh && !refresh.startsWith('demo-refresh-')) {
         try {
           const { data } = await api.post('auth/token/refresh/', { refresh })
           localStorage.setItem('gs_access', data.access)
@@ -46,8 +80,10 @@ api.interceptors.response.use(
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export const authApi = {
-  login:    (data) => api.post('auth/login/', data),
-  register: (data) => api.post('auth/register/', data),
+  ping:           ()     => axios.request({ method: 'options', url: `${API_URL}auth/register/` }),
+  login:          (data) => api.post('auth/login/', data),
+  register:       (data) => api.post('auth/register/', data),
+  simpleRegister: (data) => api.post('auth/simple-register/', data),
 }
 
 // ── Policies ─────────────────────────────────────────────────────────────────
@@ -76,8 +112,37 @@ export const analyticsApi = {
   poolHealth:  () => api.get('dashboard/pool-health/'),
 }
 
+// ── Admin ────────────────────────────────────────────────────────────────────
+export const adminApi = {
+  listDrivers: () => api.get('drivers/admin/list/'),
+}
+
+// ── Role helpers ──────────────────────────────────────────────────────────────
+// Role is determined from the platform_id prefix stored in localStorage.
+// ADMIN- prefix → admin | everything else → worker
+export const getRole = () => {
+  const stored = localStorage.getItem('gs_role')
+  if (stored) return stored
+  const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const pid = (driver.platform_id || '').toUpperCase()
+  return pid.startsWith('ADMIN-') ? 'admin' : 'worker'
+}
+
+export const detectPlatform = (platformId = '') => {
+  const pid = platformId.toUpperCase()
+  if (pid.startsWith('ZMT')) return 'Zomato'
+  if (pid.startsWith('SWG')) return 'Swiggy'
+  if (pid.startsWith('BLK')) return 'Blinkit'
+  if (pid.startsWith('ADMIN')) return 'Admin'
+  return null
+}
+
 // ── Amount formatter ──────────────────────────────────────────────────────────
 export const formatINR = (value) =>
   Number(value).toLocaleString('en-IN', { style: 'currency', currency: 'INR' })
+
+export const isNotFoundError = (err) => err?.response?.status === 404
+
+export const getApiBase = () => api.defaults.baseURL
 
 export default api

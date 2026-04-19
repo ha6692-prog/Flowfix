@@ -7,8 +7,11 @@ import Dashboard from './pages/Dashboard'
 import ActiveClaim from './pages/ActiveClaim'
 import Wallet from './pages/Wallet'
 import Claims from './pages/Claims'
+import useActivityBeacon from './hooks/useActivityBeacon'
 
 export default function App() {
+  useActivityBeacon()
+
   return (
     <BrowserRouter>
       <div className="app-wrapper">

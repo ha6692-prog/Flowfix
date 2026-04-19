@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { policiesApi, monitoringApi, analyticsApi, claimsApi, formatINR } from '../api/client'
+import { policiesApi, monitoringApi, analyticsApi, claimsApi, formatINR, isNotFoundError } from '../api/client'
 import { TierBadge } from '../components/TrustCounter'
 import AreaRiskZoneMap from '../components/AreaRiskZoneMap'
 import { useState, useEffect } from 'react'
+import { getDemoProfile } from '../data/demoProfiles'
 
 function CountdownTimer({ targetDate }) {
   const [time, setTime] = useState('')
@@ -46,17 +47,35 @@ function EDZGauge({ score }) {
 
 export default function Dashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const demoProfile = getDemoProfile(driver.platform_id)
 
   const { data: policy, isLoading: policyLoading } = useQuery({
     queryKey: ['my-policy'],
-    queryFn: () => policiesApi.myPolicy().then(r => r.data),
+    queryFn: async () => {
+      try {
+        const r = await policiesApi.myPolicy()
+        return r.data
+      } catch (err) {
+        if (isNotFoundError(err)) return demoProfile?.policy || null
+        throw err
+      }
+    },
     retry: false,
   })
 
   const { data: edz, isLoading: edzLoading } = useQuery({
     queryKey: ['zone-edz'],
-    queryFn: () => monitoringApi.zoneEdz().then(r => r.data),
-    refetchInterval: 60_000,
+    queryFn: async () => {
+      try {
+        const r = await monitoringApi.zoneEdz()
+        return r.data
+      } catch (err) {
+        if (isNotFoundError(err)) return demoProfile?.edz || null
+        throw err
+      }
+    },
+    refetchInterval: (query) => (query.state.data ? 60_000 : false),
+    retry: false,
   })
 
   const { data: pool, isLoading: poolLoading } = useQuery({
@@ -67,7 +86,15 @@ export default function Dashboard() {
 
   const { data: claims } = useQuery({
     queryKey: ['dashboard-claims'],
-    queryFn: () => claimsApi.myClaims(1).then(r => r.data),
+    queryFn: async () => {
+      try {
+        const r = await claimsApi.myClaims(1)
+        return r.data
+      } catch (err) {
+        if (isNotFoundError(err)) return demoProfile?.claims || { results: [] }
+        throw err
+      }
+    },
     retry: false,
   })
 
@@ -123,7 +150,9 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-slate-400 mb-4">You don't have an active plan yet</p>
-                <span className="text-slate-500 text-sm">Contact your platform manager to activate a plan</span>
+                <Link to="/" className="text-cyan-400 text-sm hover:text-cyan-300 transition-colors">
+                  Choose and activate a protection plan
+                </Link>
               </div>
             )}
 
