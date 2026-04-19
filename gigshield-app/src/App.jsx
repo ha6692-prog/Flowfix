@@ -28,6 +28,9 @@ export default function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute><Dashboard /></ProtectedRoute>
           } />
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute><AdminDashboard /></ProtectedRoute>
+          } />
           <Route path="/claim/active" element={
             <ProtectedRoute><ActiveClaim /></ProtectedRoute>
           } />
