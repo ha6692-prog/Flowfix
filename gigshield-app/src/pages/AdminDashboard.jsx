@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { analyticsApi, authApi, formatINR, getApiBase } from '../api/client'
+import { analyticsApi, authApi, formatINR, getApiBase, getRole } from '../api/client'
 import DemoControlPanel from '../components/DemoControlPanel'
 
 /* ── Stat card — reuses same glass card structure as Dashboard.jsx ── */
@@ -31,11 +31,12 @@ function MiniBar({ value, max, color = '#10b981' }) {
 export default function AdminDashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
   const accessToken = localStorage.getItem('gs_access') || ''
-  const isDemoSession = accessToken.startsWith('demo-access-')
+  const role = getRole()
+  const needsAdminServiceToken = role !== 'admin' || accessToken.startsWith('demo-access-')
 
   const { data: serviceToken } = useQuery({
     queryKey: ['admin-service-token'],
-    enabled: isDemoSession,
+    enabled: needsAdminServiceToken,
     retry: false,
     queryFn: async () => {
       const attempts = [
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
   })
 
   const fetchWithToken = async (path) => {
-    const tokenToUse = isDemoSession ? serviceToken : accessToken
+    const tokenToUse = serviceToken || (role === 'admin' && !accessToken.startsWith('demo-access-') ? accessToken : '')
     if (!tokenToUse) return null
     try {
       const r = await axios.get(`${getApiBase()}${path}`, {
@@ -83,7 +84,7 @@ export default function AdminDashboard() {
       if (direct) return direct
       return analyticsApi.poolHealth().then(r => r.data).catch(() => null)
     },
-    enabled: !isDemoSession || !!serviceToken,
+    enabled: !needsAdminServiceToken || !!serviceToken,
     refetchInterval: 300_000,
     retry: false,
   })
@@ -103,7 +104,7 @@ export default function AdminDashboard() {
         }
       }
     },
-    enabled: !isDemoSession || !!serviceToken,
+    enabled: !needsAdminServiceToken || !!serviceToken,
     refetchInterval: 15_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
