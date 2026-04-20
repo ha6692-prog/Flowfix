@@ -117,9 +117,15 @@ export default function AdminDashboard() {
       }
     },
     enabled: !isDemoSession || !!serviceToken,
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
     retry: false,
   })
-  const driverList = driverListState?.drivers || []
+  const driverList = [...(driverListState?.drivers || [])].sort(
+    (left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0)
+  )
   const driversEndpointUnavailable = !!driverListState?.unavailable
   const fallbackDrivers = [
     {

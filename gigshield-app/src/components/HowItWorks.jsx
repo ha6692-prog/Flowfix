@@ -127,13 +127,17 @@ function StepCard1() {
   useEffect(() => {
     if (!barRef.current) return;
 
-    ScrollTrigger.create({
+    const st = ScrollTrigger.create({
       trigger: barRef.current,
       start: 'top 80%',
       onEnter: () => {
-        gsap.to(barRef.current, { width: '84%', duration: 1.2, ease: 'power2.out' });
+        if (barRef.current) {
+          gsap.to(barRef.current, { width: '84%', duration: 1.2, ease: 'power2.out' });
+        }
       }
     });
+
+    return () => st.kill();
   }, []);
 
   return (
@@ -166,16 +170,21 @@ function StepCard2() {
   useEffect(() => {
     if (!containerRef.current || !bar1Ref.current || !bar2Ref.current || !checkRef.current) return;
 
-    ScrollTrigger.create({
+    const st = ScrollTrigger.create({
       trigger: containerRef.current,
       start: 'top 80%',
       onEnter: () => {
+        if (!bar1Ref.current || !bar2Ref.current || !checkRef.current) return;
         gsap.to(bar1Ref.current, { width: '100%', duration: 0.8, ease: 'power2.out' });
         gsap.to(bar2Ref.current, { width: '100%', duration: 0.8, delay: 0.1, ease: 'power2.out', onComplete: () => {
-          gsap.to(checkRef.current, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' });
+          if (checkRef.current) {
+            gsap.to(checkRef.current, { opacity: 1, scale: 1, duration: 0.3, ease: 'back.out(2)' });
+          }
         }});
       }
     });
+
+    return () => st.kill();
   }, []);
 
   return (
@@ -218,13 +227,17 @@ function StepCard3() {
   useEffect(() => {
     if (!notifRef.current) return;
 
-    ScrollTrigger.create({
+    const st = ScrollTrigger.create({
       trigger: notifRef.current,
       start: 'top 85%',
       onEnter: () => {
-        gsap.to(notifRef.current, { x: 0, opacity: 1, duration: 0.5, delay: 0.3, ease: 'power3.out' });
+        if (notifRef.current) {
+          gsap.to(notifRef.current, { x: 0, opacity: 1, duration: 0.5, delay: 0.3, ease: 'power3.out' });
+        }
       }
     });
+
+    return () => st.kill();
   }, []);
 
   return (

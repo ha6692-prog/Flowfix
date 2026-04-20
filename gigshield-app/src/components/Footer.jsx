@@ -46,13 +46,17 @@ export default function Footer() {
   useEffect(() => {
     if (!barRef.current) return;
 
-    ScrollTrigger.create({
+    const st = ScrollTrigger.create({
       trigger: barRef.current,
       start: "top 90%",
       onEnter: () => {
-        gsap.to(barRef.current, { width: '78%', duration: 1.4, ease: 'power2.out' });
+        if (barRef.current) {
+          gsap.to(barRef.current, { width: '78%', duration: 1.4, ease: 'power2.out' });
+        }
       }
     });
+
+    return () => st.kill();
   }, []);
 
   return (
