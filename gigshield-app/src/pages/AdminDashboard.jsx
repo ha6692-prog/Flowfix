@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
-import { analyticsApi, authApi, formatINR, getApiBase, getRole } from '../api/client'
+import { analyticsApi, formatINR, getApiBase, getRole } from '../api/client'
 import DemoControlPanel from '../components/DemoControlPanel'
 
 /* ── Stat card — reuses same glass card structure as Dashboard.jsx ── */
@@ -32,33 +32,10 @@ export default function AdminDashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
   const accessToken = localStorage.getItem('gs_access') || ''
   const role = getRole()
-  const needsAdminServiceToken = role !== 'admin' || accessToken.startsWith('demo-access-')
-
-  const { data: serviceToken } = useQuery({
-    queryKey: ['admin-service-token'],
-    enabled: needsAdminServiceToken,
-    retry: false,
-    refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const attempts = [
-        { platform_id: 'ADMIN-001', password: 'gigshield123' },
-        { platform_id: 'ADMIN-001', password: 'test123' },
-      ]
-      for (const creds of attempts) {
-        try {
-          const r = await authApi.login(creds)
-          if (r?.data?.access) return r.data.access
-        } catch (_) {
-          // Try next credential.
-        }
-      }
-      return null
-    },
-  })
+  const hasLiveAdminToken = role === 'admin' && !accessToken.startsWith('demo-access-')
 
   const fetchWithToken = async (path) => {
-    const tokenToUse = serviceToken || (role === 'admin' && !accessToken.startsWith('demo-access-') ? accessToken : '')
+    const tokenToUse = hasLiveAdminToken ? accessToken : ''
     if (!tokenToUse) return null
     try {
       const r = await axios.get(`${getApiBase()}${path}`, {
@@ -86,7 +63,7 @@ export default function AdminDashboard() {
       if (direct) return direct
       return analyticsApi.poolHealth().then(r => r.data).catch(() => null)
     },
-    enabled: !needsAdminServiceToken || !!serviceToken,
+    enabled: hasLiveAdminToken,
     refetchInterval: 300_000,
     retry: false,
   })
@@ -106,11 +83,11 @@ export default function AdminDashboard() {
         }
       }
     },
-    enabled: !needsAdminServiceToken || !!serviceToken,
     refetchInterval: 15_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
     staleTime: 0,
+    enabled: hasLiveAdminToken,
     retry: false,
   })
   const driverList = [...(driverListState?.drivers || [])].sort(
