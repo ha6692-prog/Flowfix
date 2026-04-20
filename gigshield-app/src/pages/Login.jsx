@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi, getApiBase } from '../api/client'
 
@@ -76,6 +76,7 @@ const TEST_USER_PROFILE = {
 
 export default function Login() {
   const navigate = useNavigate()
+  const submitLockRef = useRef(false)
 
   const [form, setForm] = useState({ platform_id: '', password: '' })
   const [showPw, setShowPw] = useState(false)
@@ -87,12 +88,14 @@ export default function Login() {
 
   const submit = async (e) => {
     e.preventDefault()
+    if (submitLockRef.current) return
     setError('')
 
     if (!form.platform_id.trim()) { setError('Enter your Platform ID (e.g. ZMT-DRV-0001).'); return }
     if (!form.password) { setError('Password is required.'); return }
 
     setLoading(true)
+    submitLockRef.current = true
     try {
       setAutoSignupUnavailable(false)
 
@@ -167,6 +170,7 @@ export default function Login() {
       setError(msg)
     } finally {
       setLoading(false)
+      submitLockRef.current = false
     }
   }
 
