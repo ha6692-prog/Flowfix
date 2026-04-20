@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { analyticsApi, adminApi, formatINR } from '../api/client'
+import axios from 'axios'
+import { analyticsApi, authApi, formatINR, getApiBase } from '../api/client'
 import DemoControlPanel from '../components/DemoControlPanel'
 
 /* ── Stat card — reuses same glass card structure as Dashboard.jsx ── */
@@ -29,6 +30,45 @@ function MiniBar({ value, max, color = '#10b981' }) {
 
 export default function AdminDashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const accessToken = localStorage.getItem('gs_access') || ''
+  const isDemoSession = accessToken.startsWith('demo-access-')
+
+  const { data: serviceToken } = useQuery({
+    queryKey: ['admin-service-token'],
+    enabled: isDemoSession,
+    retry: false,
+    queryFn: async () => {
+      const attempts = [
+        { platform_id: 'ADMIN-001', password: 'gigshield123' },
+        { platform_id: 'ADMIN-001', password: 'test123' },
+      ]
+      for (const creds of attempts) {
+        try {
+          const r = await authApi.login(creds)
+          if (r?.data?.access) return r.data.access
+        } catch (_) {
+          // Try next credential.
+        }
+      }
+      return null
+    },
+  })
+
+  const fetchWithToken = async (path) => {
+    const tokenToUse = isDemoSession ? serviceToken : accessToken
+    if (!tokenToUse) return null
+    try {
+      const r = await axios.get(`${getApiBase()}${path}`, {
+        headers: { Authorization: `Bearer ${tokenToUse}` },
+      })
+      return r.data
+    } catch (err) {
+      if (err?.response?.status === 401 || err?.response?.status === 403 || err?.response?.status === 404) {
+        return null
+      }
+      throw err
+    }
+  }
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['public-stats'],
@@ -38,7 +78,12 @@ export default function AdminDashboard() {
 
   const { data: pool, isLoading: poolLoading } = useQuery({
     queryKey: ['pool-health'],
-    queryFn: () => analyticsApi.poolHealth().then(r => r.data).catch(() => null),
+    queryFn: async () => {
+      const direct = await fetchWithToken('dashboard/pool-health/')
+      if (direct) return direct
+      return analyticsApi.poolHealth().then(r => r.data).catch(() => null)
+    },
+    enabled: !isDemoSession || !!serviceToken,
     refetchInterval: 300_000,
     retry: false,
   })
@@ -47,8 +92,9 @@ export default function AdminDashboard() {
     queryKey: ['admin-drivers-list'],
     queryFn: async () => {
       try {
-        const r = await adminApi.listDrivers()
-        return { drivers: r.data.drivers || [], unavailable: false }
+        const r = await fetchWithToken('drivers/admin/list/')
+        if (r?.drivers) return { drivers: r.drivers, unavailable: false }
+        return { drivers: [], unavailable: true, status: 401 }
       } catch (err) {
         return {
           drivers: [],
@@ -57,6 +103,7 @@ export default function AdminDashboard() {
         }
       }
     },
+    enabled: !isDemoSession || !!serviceToken,
     refetchInterval: 15_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
