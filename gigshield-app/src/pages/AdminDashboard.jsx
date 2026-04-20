@@ -140,6 +140,8 @@ export default function AdminDashboard() {
     },
     ...FALLBACK_DRIVERS,
   ].filter((d, i, arr) => arr.findIndex((x) => x.platform_id === d.platform_id) === i)
+  const visibleDrivers = driverList.length > 0 ? driverList : fallbackDrivers
+  const showingFallbackDrivers = driverList.length === 0
 
   const loading = statsLoading || poolLoading
   const totalDrivers = stats?.total_drivers ?? null
@@ -322,6 +324,11 @@ export default function AdminDashboard() {
         {/* ── Registered Drivers List ── */}
         <div className="glass p-6 animate-slide-up">
           <p className="text-slate-400 text-sm uppercase tracking-wider mb-4">Latest Registered Drivers</p>
+          {showingFallbackDrivers && !driversEndpointUnavailable && (
+            <div className="text-amber-400 text-xs py-2">
+              Live driver rows are not available yet, so seeded drivers are shown here.
+            </div>
+          )}
           {driversLoading ? (
             <div className="text-slate-500 text-sm py-4">Loading drivers...</div>
           ) : driversEndpointUnavailable ? (
@@ -359,7 +366,7 @@ export default function AdminDashboard() {
                 </table>
               </div>
             </>
-          ) : driverList?.length > 0 ? (
+          ) : visibleDrivers?.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -372,7 +379,7 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="text-sm text-slate-300">
-                  {driverList.map(d => (
+                  {visibleDrivers.map(d => (
                     <tr key={d.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors">
                       <td className="py-3 px-4 font-medium text-white">{d.name}</td>
                       <td className="py-3 px-4 font-mono text-cyan-400">{d.platform_id || '—'}</td>
