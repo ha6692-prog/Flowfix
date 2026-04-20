@@ -187,49 +187,60 @@ class Command(BaseCommand):
         ]
 
         tier_balances = {'bronze': 24, 'silver': 50, 'gold': 104, 'platinum': 192}
-        drivers_created = 0
+        created_count = 0
+        updated_count = 0
 
         for i, dd in enumerate(drivers_data):
-            if Driver.objects.filter(phone=dd['phone']).exists():
-                continue
-
             # Generate deterministic hash for aadhaar (test only — never real)
             aadhaar_raw = f"TEST_AADHAAR_{dd['phone']}_SEED"
             aadhaar_hash = hashlib.sha256(aadhaar_raw.encode()).hexdigest()
 
-            driver = Driver(
-                phone=dd['phone'],
+            driver, created = Driver.objects.update_or_create(
                 platform_id=dd['platform_id'],
-                name=dd['name'],
-                city=city,
-                zone=zones[dd['zone']],
-                aadhaar_hash=aadhaar_hash,
-                device_fingerprint=f'seed_device_{i:04d}_{uuid.uuid4().hex[:8]}',
-                months_active=dd['months'],
-                is_active=True,
-                consent_given=True,
-                consent_timestamp=timezone.now(),
+                defaults={
+                    'phone': dd['phone'],
+                    'name': dd['name'],
+                    'city': city,
+                    'zone': zones[dd['zone']],
+                    'aadhaar_hash': aadhaar_hash,
+                    'device_fingerprint': f'seed_device_{i:04d}_{uuid.uuid4().hex[:8]}',
+                    'months_active': dd['months'],
+                    'is_active': True,
+                    'consent_given': True,
+                    'consent_timestamp': timezone.now(),
+                },
             )
             driver.set_password('gigshield123')  # test password only
-            driver.save()
+            driver.save(update_fields=['password'])
 
-            policy = DriverPolicy.objects.create(
+            DriverPolicy.objects.update_or_create(
                 driver=driver,
-                plan=plans[dd['plan']],
-                is_active=True,
+                defaults={
+                    'plan': plans[dd['plan']],
+                    'is_active': True,
+                },
             )
 
             wallet_balance = tier_balances.get(dd['tier'], 24)
-            ReserveWallet.objects.create(
+            ReserveWallet.objects.update_or_create(
                 driver=driver,
-                balance=wallet_balance,
-                total_ever_earned=wallet_balance,
-                tier=dd['tier'],
+                defaults={
+                    'balance': wallet_balance,
+                    'total_ever_earned': wallet_balance,
+                    'tier': dd['tier'],
+                },
             )
 
-            drivers_created += 1
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
 
-        self.stdout.write(self.style.SUCCESS(f'  [OK] Created {drivers_created} test drivers (password: gigshield123)'))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f'  [OK] Upserted test drivers (created={created_count}, updated={updated_count}, password: gigshield123)'
+            )
+        )
 
         # ── 5. WeatherSnapshot (consensus_confirmed=True) ──────────────────────
         from apps.monitoring.models import WeatherSnapshot
