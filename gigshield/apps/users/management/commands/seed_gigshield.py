@@ -16,6 +16,7 @@ import hashlib
 import uuid
 
 from django.core.management.base import BaseCommand
+from django.db import connection
 from django.utils import timezone
 
 
@@ -28,13 +29,41 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         city_name = options['city']
         self.stdout.write(self.style.MIGRATE_HEADING(f'\n[SEED] Seeding GigShield for {city_name}...\n'))
+
+        # Heal PK sequences first; previous explicit id inserts can desync them on Postgres.
+        self._repair_primary_key_sequences()
         
         try:
             self._run_seed(city_name)
         except Exception as e:
             self.stdout.write(self.style.ERROR(f'  [ERROR] Seed failed: {e}'))
             self.stdout.write(self.style.WARNING(f'  [FALLBACK] Creating essential test accounts...'))
-            self._create_fallback_accounts()
+            try:
+                self._repair_primary_key_sequences()
+                self._create_fallback_accounts()
+            except Exception as fallback_error:
+                # Never fail the build because of optional seed data.
+                self.stdout.write(self.style.ERROR(f'  [ERROR] Fallback seed failed: {fallback_error}'))
+                self.stdout.write(self.style.WARNING('  [WARN] Continuing deployment without demo seed data.'))
+
+    def _repair_primary_key_sequences(self):
+        """Repair auto-increment sequences so new inserts do not collide on existing PKs."""
+        from apps.users.models import City, Zone, Driver
+
+        models = (City, Zone, Driver)
+        with connection.cursor() as cursor:
+            for model in models:
+                table = model._meta.db_table
+                # Set sequence to max(id); next insert will use max(id)+1.
+                cursor.execute(
+                    f"""
+                    SELECT setval(
+                        pg_get_serial_sequence('{table}', 'id'),
+                        COALESCE((SELECT MAX(id) FROM {table}), 1),
+                        true
+                    )
+                    """
+                )
     
     def _create_fallback_accounts(self):
         """Create minimal test accounts if full seed fails."""
@@ -58,21 +87,20 @@ class Command(BaseCommand):
         ]
         
         for acc in test_accounts:
-            if Driver.objects.filter(platform_id=acc['platform_id']).exists():
-                continue
-            
             aadhaar_hash = hashlib.sha256(f"TEST_AADHAAR_{acc['phone']}_FALLBACK".encode()).hexdigest()
-            driver = Driver(
+            driver, _ = Driver.objects.update_or_create(
                 platform_id=acc['platform_id'],
-                phone=acc['phone'],
-                name=acc['name'],
-                city=city,
-                zone=zone,
-                aadhaar_hash=aadhaar_hash,
-                device_fingerprint=f"fallback_{uuid.uuid4().hex}",
-                is_active=True,
-                consent_given=True,
-                consent_timestamp=timezone.now(),
+                defaults={
+                    'phone': acc['phone'],
+                    'name': acc['name'],
+                    'city': city,
+                    'zone': zone,
+                    'aadhaar_hash': aadhaar_hash,
+                    'device_fingerprint': f"fallback_{uuid.uuid4().hex}",
+                    'is_active': True,
+                    'consent_given': True,
+                    'consent_timestamp': timezone.now(),
+                },
             )
             driver.set_password('gigshield123')
             driver.save()
@@ -214,7 +242,7 @@ class Command(BaseCommand):
         self.stdout.write('')
         self.stdout.write(self.style.MIGRATE_HEADING('[DONE] Seed complete! Test demo loop:'))
         self.stdout.write('')
-        self.stdout.write('  1. POST /api/auth/login/  {"phone":"9100000001","password":"gigshield123"}')
+        self.stdout.write('  1. POST /api/auth/login/  {"platform_id":"ZMT-DRV-0001","password":"gigshield123"}')
         self.stdout.write('  2. POST /api/policies/activate/  {"plan_id": 1}  (if not already active)')
         self.stdout.write('  3. Set SHADOW_MODE=False in .env → restart server')
         self.stdout.write('  4. In shell: from apps.monitoring.tasks import edz_engine_task; edz_engine_task.apply()')
