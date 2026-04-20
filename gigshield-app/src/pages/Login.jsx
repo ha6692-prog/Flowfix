@@ -179,7 +179,7 @@ export default function Login() {
         }
       }
 
-      if (!data && isKnownTestId) {
+      if (!data && isKnownTestId && !platformId.toUpperCase().startsWith('ADMIN-')) {
         const demo = TEST_USER_PROFILE[platformId] || {
           name: deriveDemoName(platformId),
           months_active: 0,

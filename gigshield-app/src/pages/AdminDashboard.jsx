@@ -38,6 +38,8 @@ export default function AdminDashboard() {
     queryKey: ['admin-service-token'],
     enabled: needsAdminServiceToken,
     retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const attempts = [
         { platform_id: 'ADMIN-001', password: 'gigshield123' },
