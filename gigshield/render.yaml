@@ -10,7 +10,6 @@ services:
     plan: free
     runtime: python
     buildCommand: "./build.sh"
-    preDeployCommand: "python manage.py seed_gigshield --city=Chennai"
     startCommand: "daphne -b 0.0.0.0 -p 10000 gigshield.asgi:application"
     envVars:
       - key: DATABASE_URL
