@@ -668,6 +668,17 @@ This system operates as a separated frontend (React) and backend (Django). Both 
 - **Python** (v3.10+)
 - **Frontend Dependencies:** React 18, Vite, TailwindCSS, React Router DOM, Recharts
 - **Backend Dependencies:** Django 5.0, Django REST Framework, Django Channels (WebSockets for real-time telemetry), Celery (async tasks), PostgreSQL/SQLite3 (local dev uses SQLite by default)
+- **Payments / Razorpay:** `razorpay==1.4.1` is already included in `requirements.txt`; no extra Python package is needed right now for the current backend-led payout flow.
+- **Razorpay Environment Variables:** `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` must be set in the backend environment before enabling live payment processing.
+- **Frontend Payment Note:** the current React app does not require a separate npm payment package yet. If a browser-side Razorpay checkout is added later, it will need the official Razorpay checkout script or a thin wrapper, not a new backend dependency.
+
+### Important Local Notes
+- Run backend and frontend in separate terminals.
+- Apply backend migrations before starting the server after any model change.
+- Use `python manage.py seed_gigshield --city=Chennai` if demo users are missing.
+- Login uses `platform_id`, not phone number.
+- For local payment testing, leave Razorpay keys blank unless you are intentionally testing live payments.
+- If WebSockets do not connect, use Daphne/Channels instead of plain `runserver`.
 
 ### 1. Setting up the Backend (Django)
 
