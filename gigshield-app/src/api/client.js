@@ -121,11 +121,13 @@ export const adminApi = {
 // Role is determined from the platform_id prefix stored in localStorage.
 // ADMIN- prefix → admin | everything else → worker
 export const getRole = () => {
-  const stored = localStorage.getItem('gs_role')
-  if (stored) return stored
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
   const pid = (driver.platform_id || '').toUpperCase()
-  return pid.startsWith('ADMIN-') ? 'admin' : 'worker'
+  // Prefer role derived from the current driver profile to avoid stale gs_role.
+  if (pid) return pid.startsWith('ADMIN-') ? 'admin' : 'worker'
+  const stored = localStorage.getItem('gs_role')
+  if (stored) return stored
+  return 'worker'
 }
 
 export const detectPlatform = (platformId = '') => {

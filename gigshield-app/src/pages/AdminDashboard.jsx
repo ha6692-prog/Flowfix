@@ -32,7 +32,9 @@ export default function AdminDashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
   const accessToken = localStorage.getItem('gs_access') || ''
   const role = getRole()
-  const hasLiveAdminToken = role === 'admin' && !accessToken.startsWith('demo-access-')
+  const adminPlatformId = (driver.platform_id || '').toUpperCase()
+  const hasAdminIdentity = role === 'admin' || adminPlatformId.startsWith('ADMIN-')
+  const hasLiveAdminToken = hasAdminIdentity && !!accessToken && !accessToken.startsWith('demo-access-')
 
   const fetchWithToken = async (path) => {
     const tokenToUse = hasLiveAdminToken ? accessToken : ''
@@ -210,6 +212,8 @@ export default function AdminDashboard() {
                   Refreshes every 5 minutes
                 </p>
               </>
+            ) : !hasLiveAdminToken ? (
+              <p className="text-amber-400 text-sm text-center mt-8">Live admin token required. Please sign in again with an ADMIN account.</p>
             ) : (
               <p className="text-slate-500 text-sm text-center mt-8">No pool data yet</p>
             )}
@@ -279,6 +283,10 @@ export default function AdminDashboard() {
           <p className="text-slate-400 text-sm uppercase tracking-wider mb-4">Latest Registered Drivers</p>
           {driversLoading ? (
             <div className="text-slate-500 text-sm py-4">Loading drivers...</div>
+          ) : !hasLiveAdminToken ? (
+            <div className="text-amber-400 text-sm py-4">
+              Live admin token required to load registered drivers. Re-login with ADMIN credentials.
+            </div>
           ) : driversEndpointUnavailable ? (
             <div className="text-red-400 text-sm py-4">
               Driver list endpoint is unavailable{driverListState?.status ? ` (HTTP ${driverListState.status})` : ''}.
