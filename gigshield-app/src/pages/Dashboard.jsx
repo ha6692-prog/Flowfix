@@ -47,6 +47,8 @@ function EDZGauge({ score }) {
 
 export default function Dashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const accessToken = localStorage.getItem('gs_access') || ''
+  const hasLiveToken = !!accessToken && !accessToken.startsWith('demo-access-')
   const demoProfile = getDemoProfile(driver.platform_id)
 
   const { data: policy, isLoading: policyLoading } = useQuery({
@@ -60,6 +62,7 @@ export default function Dashboard() {
         throw err
       }
     },
+    enabled: hasLiveToken,
     retry: false,
   })
 
@@ -74,6 +77,7 @@ export default function Dashboard() {
         throw err
       }
     },
+    enabled: hasLiveToken,
     refetchInterval: (query) => (query.state.data ? 60_000 : false),
     retry: false,
   })
@@ -81,6 +85,7 @@ export default function Dashboard() {
   const { data: pool, isLoading: poolLoading } = useQuery({
     queryKey: ['pool-health'],
     queryFn: () => analyticsApi.poolHealth().then(r => r.data),
+    enabled: hasLiveToken,
     refetchInterval: 300_000, // 5 min
   })
 
@@ -95,6 +100,7 @@ export default function Dashboard() {
         throw err
       }
     },
+    enabled: hasLiveToken,
     retry: false,
   })
 

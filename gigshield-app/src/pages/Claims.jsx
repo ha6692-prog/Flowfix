@@ -86,6 +86,8 @@ const cardVariant = {
 
 export default function Claims() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
+  const accessToken = localStorage.getItem('gs_access') || ''
+  const hasLiveToken = !!accessToken && !accessToken.startsWith('demo-access-')
   const demoProfile = getDemoProfile(driver.platform_id)
   const [page, setPage] = useState(1)
   const [filter, setFilter] = useState('All')
@@ -103,6 +105,7 @@ export default function Claims() {
       }
     },
     keepPreviousData: true,
+    enabled: hasLiveToken,
     retry: false,
   })
 

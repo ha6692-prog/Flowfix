@@ -2,20 +2,6 @@ import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi, getApiBase } from '../api/client'
 
-const hashPlatformIdToPhone = (platformId = '') => {
-  const normalized = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  let hash = 0
-  for (let i = 0; i < normalized.length; i += 1) {
-    hash = (hash * 31 + normalized.charCodeAt(i)) % 1000000000
-  }
-  return `9${String(hash).padStart(9, '0')}`
-}
-
-const deriveDemoName = (platformId = '') => {
-  const suffix = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-4) || 'USER'
-  return `Driver ${suffix}`
-}
-
 const getRetryAfterSeconds = (err) => {
   const header = err?.response?.headers?.['retry-after']
   if (!header) return null
@@ -23,7 +9,6 @@ const getRetryAfterSeconds = (err) => {
   return Number.isFinite(secs) ? secs : null
 }
 
-/* ── tiny eye icon ──────────────────────────────────────────────────────── */
 const EyeIcon = ({ open }) =>
   open ? (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -36,7 +21,6 @@ const EyeIcon = ({ open }) =>
     </svg>
   )
 
-/* ── Shield SVG logo ─────────────────────────────────────────────────────── */
 const ShieldLogo = () => (
   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-violet-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-6">
     <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
@@ -45,13 +29,13 @@ const ShieldLogo = () => (
   </div>
 )
 
-/* ── Platform badge icons ────────────────────────────────────────────────── */
 const PlatformBadge = ({ name }) => {
   const colors = {
     Zomato: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-400',
     Swiggy: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
     Admin: 'from-violet-500/20 to-violet-600/10 border-violet-500/30 text-violet-300',
   }
+
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r border ${colors[name] || 'border-slate-500/30 text-slate-400'}`}>
       {name}
@@ -59,20 +43,11 @@ const PlatformBadge = ({ name }) => {
   )
 }
 
-/* ── Quick-login test user chips ────────────────────────────────────────── */
 const TEST_USERS = [
   { label: 'Prateek', tier: 'Gold · 4 claims', platformId: 'ZMT-DRV-0001', platform: 'Zomato', color: 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-400' },
   { label: 'Ananya', tier: 'Silver · 2 claims', platformId: 'SWG-DRV-0002', platform: 'Swiggy', color: 'from-slate-500/20 to-slate-600/10 border-slate-400/30 text-slate-300' },
   { label: 'Admin', tier: 'Platform Admin', platformId: 'ADMIN-001', platform: 'Admin', color: 'from-violet-500/20 to-violet-600/10 border-violet-400/30 text-violet-300' },
 ]
-
-const TEST_PASSWORDS = ['gigshield123', 'test123']
-
-const TEST_USER_PROFILE = {
-  'ZMT-DRV-0001': { name: 'Prateek Sharma', months_active: 9, zone: 'North Zone' },
-  'SWG-DRV-0002': { name: 'Ananya Devi', months_active: 5, zone: 'South Zone' },
-  'ADMIN-001': { name: 'Platform Admin', months_active: 24, zone: 'North Zone' },
-}
 
 export default function Login() {
   const navigate = useNavigate()
@@ -82,7 +57,6 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [autoSignupUnavailable, setAutoSignupUnavailable] = useState(false)
 
   const fill = (platformId) => setForm({ platform_id: platformId, password: 'gigshield123' })
 
@@ -91,67 +65,36 @@ export default function Login() {
     if (submitLockRef.current) return
     setError('')
 
-    if (!form.platform_id.trim()) { setError('Enter your Platform ID (e.g. ZMT-DRV-0001).'); return }
-    if (!form.password) { setError('Password is required.'); return }
+    if (!form.platform_id.trim()) {
+      setError('Enter your Platform ID (e.g. ZMT-DRV-0001).')
+      return
+    }
+    if (!form.password) {
+      setError('Password is required.')
+      return
+    }
 
     setLoading(true)
     submitLockRef.current = true
+
     try {
-      setAutoSignupUnavailable(false)
-
       const platformId = form.platform_id.trim()
-      const isKnownTestId = TEST_USERS.some((u) => u.platformId === platformId)
-
-      let data = null
-      let loginError = null
-
-      try {
-        const response = await authApi.login({ platform_id: platformId, password: form.password })
-        data = response.data
-      } catch (attemptErr) {
-        loginError = attemptErr
-        if (!attemptErr.response || attemptErr.response?.status !== 400) {
-          throw attemptErr
-        }
-      }
-
-      if (!data && isKnownTestId && !platformId.toUpperCase().startsWith('ADMIN-')) {
-        const demo = TEST_USER_PROFILE[platformId] || {
-          name: deriveDemoName(platformId),
-          months_active: 0,
-          zone: null,
-        }
-        data = {
-          access: `demo-access-${platformId}`,
-          refresh: `demo-refresh-${platformId}`,
-          driver: {
-            id: `demo-${platformId}`,
-            platform_id: platformId,
-            name: demo.name,
-            phone: hashPlatformIdToPhone(platformId),
-            months_active: demo.months_active,
-            is_active: true,
-            zone: demo.zone,
-          },
-        }
-      }
-
-      if (!data) throw loginError
-
-      setAutoSignupUnavailable(false)
-
-      // Determine role from platform_id prefix
+      const response = await authApi.login({ platform_id: platformId, password: form.password })
+      const data = response.data
       const role = platformId.toUpperCase().startsWith('ADMIN-') ? 'admin' : 'worker'
+
       localStorage.setItem('gs_access', data.access)
       localStorage.setItem('gs_refresh', data.refresh)
       localStorage.setItem('gs_driver', JSON.stringify(data.driver))
       localStorage.setItem('gs_role', role)
+
       navigate(role === 'admin' ? '/admin-dashboard' : '/dashboard', { replace: true })
     } catch (err) {
       if (!err.response) {
         setError(`Backend unavailable at ${getApiBase()} - retry in a few seconds.`)
         return
       }
+
       if (err.response?.status === 429) {
         const retryAfter = getRetryAfterSeconds(err)
         setError(
@@ -161,9 +104,10 @@ export default function Login() {
         )
         return
       }
+
       const invalidCreds = err.response?.data?.non_field_errors?.[0] === 'Invalid Platform ID or password.'
       const msg =
-        (invalidCreds ? 'Invalid Platform ID or password. If this is a new account, create it from Sign up first.' : err.response?.data?.non_field_errors?.[0]) ||
+        (invalidCreds ? 'Invalid Platform ID or password.' : err.response?.data?.non_field_errors?.[0]) ||
         err.response?.data?.detail ||
         err.response?.data?.platform_id?.[0] ||
         'Invalid Platform ID or password.'
@@ -176,25 +120,19 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 pt-20">
-      {/* Background glow blobs */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden -z-10">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-cyan-500/5 blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full bg-violet-500/5 blur-3xl" />
       </div>
 
       <div className="w-full max-w-md">
-
-        {/* ── Card ── */}
         <div className="glass p-8 rounded-3xl shadow-2xl shadow-black/40">
-
-          {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
             <ShieldLogo />
             <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
             <p className="text-slate-400 text-sm">Sign in with your platform credentials</p>
           </div>
 
-          {/* Unified DB info banner */}
           <div className="mb-6 bg-cyan-500/5 border border-cyan-500/20 rounded-xl px-4 py-3">
             <div className="flex items-center gap-2 mb-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-cyan-400 shrink-0">
@@ -208,7 +146,6 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Quick-login chips */}
           <div className="mb-6">
             <p className="text-xs text-slate-500 uppercase tracking-widest mb-3">Quick test login</p>
             <div className="flex gap-2 flex-wrap">
@@ -228,25 +165,16 @@ export default function Login() {
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-600 mt-2 text-center">Click a chip → auto-fills ID + password <code className="text-slate-400">gigshield123</code></p>
-            {autoSignupUnavailable && (
-              <p className="text-[11px] text-amber-400 mt-2 text-center">
-                Auto-signup unavailable on this backend. Use seeded test users or enable `auth/simple-register/` on backend.
-              </p>
-            )}
+            <p className="text-[11px] text-slate-600 mt-2 text-center">Click a chip → auto-fills ID + password <span className="text-slate-400">gigshield123</span></p>
           </div>
 
-          {/* Divider */}
           <div className="flex items-center gap-3 mb-6">
             <div className="h-px flex-1 bg-white/[0.06]" />
             <span className="text-xs text-slate-600">or enter manually</span>
             <div className="h-px flex-1 bg-white/[0.06]" />
           </div>
 
-          {/* Form */}
           <form onSubmit={submit} className="space-y-4" noValidate>
-
-            {/* Platform ID */}
             <div>
               <label htmlFor="login-platform-id" className="label">Platform ID</label>
               <div className="relative">
@@ -267,7 +195,6 @@ export default function Login() {
               <p className="text-[11px] text-slate-600 mt-1.5 ml-1">Your Zomato / Swiggy driver Platform ID</p>
             </div>
 
-            {/* Password */}
             <div>
               <label htmlFor="login-password" className="label">Password</label>
               <div className="relative">
@@ -291,7 +218,6 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Error */}
             {error && (
               <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm animate-pulse">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0">
@@ -301,7 +227,6 @@ export default function Login() {
               </div>
             )}
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -325,7 +250,6 @@ export default function Login() {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="mt-6 flex flex-col items-center gap-2 text-sm text-slate-500">
             <Link to="/" className="hover:text-slate-400 transition-colors text-xs">
               ← Back to home
@@ -336,7 +260,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Info note */}
         <p className="text-center text-xs text-slate-600 mt-4">
           Secured with AES-256 · DPDPA compliant · No data sold
         </p>

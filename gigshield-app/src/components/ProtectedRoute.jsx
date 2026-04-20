@@ -3,7 +3,7 @@ import { getRole } from '../api/client'
 
 export default function ProtectedRoute({ children, requiredRole }) {
   const token = localStorage.getItem('gs_access')
-  if (!token) return <Navigate to="/login" replace />
+  if (!token || token.startsWith('demo-access-')) return <Navigate to="/login" replace />
 
   if (requiredRole) {
     const role = getRole()

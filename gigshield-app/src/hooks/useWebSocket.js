@@ -22,7 +22,7 @@ export default function useWebSocket(driverId, onMessage) {
     if (!driverId || unmountedRef.current) return
 
     const token = localStorage.getItem('gs_access')
-    if (!token) return
+    if (!token || token.startsWith('demo-access-')) return
 
     // Determine WebSocket URL from environment or current location
     let wsUrl
