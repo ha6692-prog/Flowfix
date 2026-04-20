@@ -656,3 +656,57 @@ FlowFix transforms insurance from a reactive payout system into a proactive fina
 
 *Built by Team CodeStorm for Guidewire DEVTrails 2026 — "AI-Powered Insurance for India's Gig Economy"*
 *Persona: All Delivery & Gig Economy Partners | Primary Zone: Pan-India*
+
+---
+
+## 18. 🚀 Running Locally & Dependencies
+
+This system operates as a separated frontend (React) and backend (Django). Both need to be running concurrently for the application to function.
+
+### Prerequisites & Dependencies
+- **Node.js** (v18+) and npm
+- **Python** (v3.10+)
+- **Frontend Dependencies:** React 18, Vite, TailwindCSS, React Router DOM, Recharts
+- **Backend Dependencies:** Django 5.0, Django REST Framework, Django Channels (WebSockets for real-time telemetry), Celery (async tasks), PostgreSQL/SQLite3 (local dev uses SQLite by default)
+
+### 1. Setting up the Backend (Django)
+
+Open a terminal and execute the following:
+
+```bash
+# Navigate to the backend directory
+cd gigshield
+
+# Create and activate a virtual environment (recommended)
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Mac/Linux:
+# source venv/bin/activate
+
+# Install all required Python dependencies
+pip install -r requirements.txt
+
+# Apply database migrations
+python manage.py migrate
+
+# Start the Django development server
+python manage.py runserver
+```
+The backend API will now be running at `http://localhost:8000`.
+
+### 2. Setting up the Frontend (Vite + React)
+
+Open a **new** terminal window and execute the following:
+
+```bash
+# Navigate to the frontend application directory
+cd gigshield-app
+
+# Install all required Node packages
+npm install
+
+# Start the Vite development server
+npm run dev
+```
+The frontend dashboard will now be running at `http://localhost:5173`. Open this URL in your browser to view the application!
