@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { analyticsApi, formatINR } from '../api/client'
+import { analyticsApi, adminApi, formatINR } from '../api/client'
 import DemoControlPanel from '../components/DemoControlPanel'
 
 /* ── Stat card — reuses same glass card structure as Dashboard.jsx ── */
@@ -27,15 +27,8 @@ function MiniBar({ value, max, color = '#10b981' }) {
   )
 }
 
-const FALLBACK_DRIVERS = [
-  { id: 'fd-1', name: 'Prateek Sharma', platform_id: 'ZMT-DRV-0001', phone: '91******01', zone: 'North Zone', is_active: true },
-  { id: 'fd-2', name: 'Ananya Devi', platform_id: 'SWG-DRV-0002', phone: '91******02', zone: 'South Zone', is_active: true },
-  { id: 'fd-3', name: 'Platform Admin', platform_id: 'ADMIN-001', phone: '90******01', zone: 'North Zone', is_active: true },
-]
-
 export default function AdminDashboard() {
   const driver = JSON.parse(localStorage.getItem('gs_driver') || '{}')
-  const accessToken = localStorage.getItem('gs_access') || ''
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['public-stats'],
@@ -50,21 +43,31 @@ export default function AdminDashboard() {
     retry: false,
   })
 
-  const fallbackDrivers = [
-    {
-      id: 'me',
-      name: driver.name || 'Current Session',
-      platform_id: driver.platform_id || '—',
-      phone: driver.phone || '—',
-      zone: driver.zone || '—',
-      is_active: true,
+  const { data: driverListState, isLoading: driversLoading } = useQuery({
+    queryKey: ['admin-drivers-list'],
+    queryFn: async () => {
+      try {
+        const r = await adminApi.listDrivers()
+        return { drivers: r.data.drivers || [], unavailable: false }
+      } catch (err) {
+        return {
+          drivers: [],
+          unavailable: true,
+          status: err?.response?.status || null,
+        }
+      }
     },
-    ...FALLBACK_DRIVERS,
-  ].filter((d, i, arr) => arr.findIndex((x) => x.platform_id === d.platform_id) === i)
-  const visibleDrivers = fallbackDrivers
-  const driversEndpointUnavailable = false
-  const driversLoading = false
-  const showingFallbackDrivers = true
+    refetchInterval: 15_000,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    retry: false,
+  })
+  const driverList = [...(driverListState?.drivers || [])].sort(
+    (left, right) => new Date(right.created_at || 0) - new Date(left.created_at || 0)
+  )
+  const driversEndpointUnavailable = !!driverListState?.unavailable
+  const visibleDrivers = driverList
 
   const loading = statsLoading || poolLoading
   const totalDrivers = stats?.total_drivers ?? null
@@ -247,48 +250,12 @@ export default function AdminDashboard() {
         {/* ── Registered Drivers List ── */}
         <div className="glass p-6 animate-slide-up">
           <p className="text-slate-400 text-sm uppercase tracking-wider mb-4">Latest Registered Drivers</p>
-          {showingFallbackDrivers && !driversEndpointUnavailable && (
-            <div className="text-amber-400 text-xs py-2">
-              Live driver rows are not available yet, so seeded drivers are shown here.
-            </div>
-          )}
           {driversLoading ? (
             <div className="text-slate-500 text-sm py-4">Loading drivers...</div>
           ) : driversEndpointUnavailable ? (
-            <>
-              <div className="text-amber-400 text-sm py-2">Driver list endpoint is unavailable on this backend deployment.</div>
-              <div className="text-slate-500 text-xs pb-3">Showing sample driver records so the panel stays usable.</div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-white/5 text-xs uppercase tracking-wider text-slate-500">
-                      <th className="py-3 px-4 font-medium">Name</th>
-                      <th className="py-3 px-4 font-medium">Platform ID</th>
-                      <th className="py-3 px-4 font-medium">Phone</th>
-                      <th className="py-3 px-4 font-medium">Zone</th>
-                      <th className="py-3 px-4 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-sm text-slate-300">
-                    {fallbackDrivers.map(d => (
-                      <tr key={d.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 px-4 font-medium text-white">{d.name}</td>
-                        <td className="py-3 px-4 font-mono text-cyan-400">{d.platform_id || '—'}</td>
-                        <td className="py-3 px-4">{d.phone}</td>
-                        <td className="py-3 px-4">{d.zone || '—'}</td>
-                        <td className="py-3 px-4">
-                          {d.is_active ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-emerald-500/20 text-emerald-400">Active</span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold bg-slate-500/20 text-slate-400">Inactive</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
+            <div className="text-red-400 text-sm py-4">
+              Driver list endpoint is unavailable{driverListState?.status ? ` (HTTP ${driverListState.status})` : ''}.
+            </div>
           ) : visibleDrivers?.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
