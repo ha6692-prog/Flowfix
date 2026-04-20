@@ -9,8 +9,12 @@ export default function HowItWorks() {
   const headlineRef = useRef(null);
 
   useEffect(() => {
+    if (!headlineRef.current) return;
+
     // Headline reveal animation
     const words = document.querySelectorAll('.hiw-word-inner');
+    if (!words.length) return;
+
     gsap.fromTo(words, 
       { y: 80 }, 
       { 
@@ -121,6 +125,8 @@ function StepCard1() {
   const barRef = useRef(null);
 
   useEffect(() => {
+    if (!barRef.current) return;
+
     ScrollTrigger.create({
       trigger: barRef.current,
       start: 'top 80%',
@@ -158,6 +164,8 @@ function StepCard2() {
   const checkRef = useRef(null);
 
   useEffect(() => {
+    if (!containerRef.current || !bar1Ref.current || !bar2Ref.current || !checkRef.current) return;
+
     ScrollTrigger.create({
       trigger: containerRef.current,
       start: 'top 80%',
@@ -208,6 +216,8 @@ function StepCard3() {
   const notifRef = useRef(null);
 
   useEffect(() => {
+    if (!notifRef.current) return;
+
     ScrollTrigger.create({
       trigger: notifRef.current,
       start: 'top 85%',

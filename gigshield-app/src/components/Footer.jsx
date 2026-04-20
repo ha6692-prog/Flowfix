@@ -12,6 +12,8 @@ function AnimatedCounter({ endValue, duration = 2000, prefix = "", className = "
   const started = useRef(false);
 
   useEffect(() => {
+    if (!ref.current) return;
+
     ScrollTrigger.create({
       trigger: ref.current,
       start: "top 90%",
@@ -42,6 +44,8 @@ export default function Footer() {
   const barRef = useRef(null);
 
   useEffect(() => {
+    if (!barRef.current) return;
+
     ScrollTrigger.create({
       trigger: barRef.current,
       start: "top 90%",

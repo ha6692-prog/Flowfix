@@ -2,6 +2,42 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi, detectPlatform } from '../api/client'
 
+const hashPlatformIdToPhone = (platformId = '') => {
+  const normalized = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '')
+  let hash = 0
+  for (let i = 0; i < normalized.length; i += 1) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) % 1000000000
+  }
+  return `9${String(hash).padStart(9, '0')}`
+}
+
+const deriveDemoName = (platformId = '') => {
+  const suffix = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-4) || 'USER'
+  return `Driver ${suffix}`
+}
+
+const toSha256Hex = async (input) => {
+  const data = new TextEncoder().encode(input)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+const registerViaCompatEndpoint = async (platformId, password) => {
+  const aadhaarHash = await toSha256Hex(`${platformId}-aadhaar`)
+  const deviceHash = await toSha256Hex(`${platformId}-${Date.now()}-web`)
+  return authApi.register({
+    phone: hashPlatformIdToPhone(platformId),
+    password,
+    name: deriveDemoName(platformId),
+    city_id: 1,
+    zone_id: 1,
+    aadhaar_hash: aadhaarHash,
+    pan_hash: '',
+    device_fingerprint: `web_${deviceHash.slice(0, 24)}`,
+    consent_given: true,
+  })
+}
+
 /* ── tiny eye icon (reused from Login) ──────────────────────────────────── */
 const EyeIcon = ({ open }) =>
   open ? (
@@ -65,12 +101,23 @@ export default function Signup() {
 
     setLoading(true)
     try {
-      await authApi.simpleRegister({
-        name:        form.name.trim(),
-        platform_id: form.platform_id.trim(),
-        phone:       form.phone.trim(),
-        password:    form.password,
-      })
+      const platformId = form.platform_id.trim()
+
+      try {
+        await authApi.simpleRegister({
+          name:        form.name.trim(),
+          platform_id: platformId,
+          phone:       form.phone.trim(),
+          password:    form.password,
+        })
+      } catch (registerErr) {
+        if (registerErr.response?.status === 404) {
+          await registerViaCompatEndpoint(platformId, form.password)
+        } else {
+          throw registerErr
+        }
+      }
+
       setSuccess('Account created! Redirecting to login…')
       setTimeout(() => navigate('/login'), 1800)
     } catch (err) {

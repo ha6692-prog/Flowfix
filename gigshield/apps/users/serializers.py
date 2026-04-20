@@ -1,5 +1,6 @@
 import hashlib
 import uuid
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import serializers
 from .models import City, Zone, Driver, DriverActivity
@@ -171,26 +172,42 @@ class SimpleRegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         from .models import City, Zone
-        # Auto-pick first active city and its first zone
+        # Auto-pick first active city and its first zone.
+        # If production data is empty, create a safe fallback so signup still works.
         city = City.objects.filter(is_active=True).first()
-        zone = Zone.objects.filter(city=city).first() if city else None
+        if not city:
+            city, _ = City.objects.get_or_create(name='Chennai', defaults={'is_active': True})
+
+        zone = Zone.objects.filter(city=city).first()
+        if not zone:
+            zone, _ = Zone.objects.get_or_create(
+                city=city,
+                name='Central Zone',
+                defaults={'pool_balance': 0, 'risk_score': 0.0, 'active_driver_count': 0},
+            )
 
         # Deterministic aadhaar hash from phone + platform_id (test only)
         raw = f"{validated_data['phone']}_{validated_data['platform_id']}_SIGNUP"
         aadhaar_hash = hashlib.sha256(raw.encode()).hexdigest()
 
-        driver = Driver(
-            name=validated_data['name'],
-            platform_id=validated_data['platform_id'],
-            phone=validated_data['phone'],
-            city=city,
-            zone=zone,
-            aadhaar_hash=aadhaar_hash,
-            device_fingerprint=f'signup_{uuid.uuid4().hex}',
-            is_active=True,
-            consent_given=True,
-            consent_timestamp=timezone.now(),
-        )
-        driver.set_password(validated_data['password'])
-        driver.save()
-        return driver
+        try:
+            with transaction.atomic():
+                driver = Driver(
+                    name=validated_data['name'],
+                    platform_id=validated_data['platform_id'],
+                    phone=validated_data['phone'],
+                    city=city,
+                    zone=zone,
+                    aadhaar_hash=aadhaar_hash,
+                    device_fingerprint=f'signup_{uuid.uuid4().hex}',
+                    is_active=True,
+                    consent_given=True,
+                    consent_timestamp=timezone.now(),
+                )
+                driver.set_password(validated_data['password'])
+                driver.save()
+                return driver
+        except IntegrityError as exc:
+            raise serializers.ValidationError({
+                'non_field_errors': ['Registration could not be completed because this account or identity already exists.']
+            }) from exc
