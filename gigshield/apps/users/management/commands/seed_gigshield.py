@@ -31,7 +31,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.MIGRATE_HEADING(f'\n[SEED] Seeding GigShield for {city_name}...\n'))
 
         # Heal PK sequences first; previous explicit id inserts can desync them on Postgres.
-        self._repair_primary_key_sequences()
+        try:
+            self._repair_primary_key_sequences()
+        except Exception as seq_error:
+            self.stdout.write(self.style.WARNING(f'  [WARN] Sequence repair skipped: {seq_error}'))
         
         try:
             self._run_seed(city_name)
@@ -39,7 +42,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.ERROR(f'  [ERROR] Seed failed: {e}'))
             self.stdout.write(self.style.WARNING(f'  [FALLBACK] Creating essential test accounts...'))
             try:
-                self._repair_primary_key_sequences()
+                try:
+                    self._repair_primary_key_sequences()
+                except Exception as seq_error:
+                    self.stdout.write(self.style.WARNING(f'  [WARN] Sequence repair skipped in fallback: {seq_error}'))
                 self._create_fallback_accounts()
             except Exception as fallback_error:
                 # Never fail the build because of optional seed data.
@@ -53,12 +59,17 @@ class Command(BaseCommand):
         models = (City, Zone, Driver)
         with connection.cursor() as cursor:
             for model in models:
+                pk_type = model._meta.pk.get_internal_type()
+                if pk_type not in ('AutoField', 'BigAutoField', 'SmallAutoField'):
+                    continue
+
                 table = model._meta.db_table
+                sequence_name = f'{table}_id_seq'
                 # Set sequence to max(id); next insert will use max(id)+1.
                 cursor.execute(
                     f"""
                     SELECT setval(
-                        pg_get_serial_sequence('{table}', 'id'),
+                        '{sequence_name}',
                         COALESCE((SELECT MAX(id) FROM {table}), 1),
                         true
                     )
