@@ -10,7 +10,7 @@ services:
     plan: free
     runtime: python
     buildCommand: "./build.sh"
-    preDeployCommand: "python manage.py shell -c \"from apps.users.models import Driver, City, Zone; from django.contrib.auth.hashers import make_password; city,_ = City.objects.get_or_create(id=1, defaults={'name': 'Metropolis'}); zone,_ = Zone.objects.get_or_create(id=1, defaults={'city': city, 'name': 'Downtown'}); [Driver.objects.update_or_create(platform_id=p, defaults=d) for p, d in [('ZMT-DRV-0001', {'password': make_password('test123'), 'phone':'5551', 'name':'Prateek', 'city':city, 'zone':zone, 'aadhaar_hash':'a1', 'consent_given':True, 'device_fingerprint':'f1'}), ('SWG-DRV-0002', {'password': make_password('test123'), 'phone':'5552', 'name':'Ananya', 'city':city, 'zone':zone, 'aadhaar_hash':'a2', 'consent_given':True, 'device_fingerprint':'f2'}), ('ZMT-DRV-0003', {'password': make_password('test123'), 'phone':'5553', 'name':'Kiran', 'city':city, 'zone':zone, 'aadhaar_hash':'a3', 'consent_given':True, 'device_fingerprint':'f3'})]]\""
+    preDeployCommand: "python manage.py seed_gigshield --city=Chennai"
     startCommand: "daphne -b 0.0.0.0 -p 10000 gigshield.asgi:application"
     envVars:
       - key: DATABASE_URL
