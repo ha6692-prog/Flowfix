@@ -18,16 +18,19 @@ class Payout(models.Model):
     claim = models.ForeignKey('claims.Claim', on_delete=models.CASCADE, related_name='payouts')
     driver = models.ForeignKey('users.Driver', on_delete=models.CASCADE, related_name='payouts')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='queued')
-    razorpay_transfer_id = models.CharField(max_length=100, null=True, blank=True)
-    attempt_count = models.IntegerField(default=0)       # max 3
-    queued_at = models.DateTimeField(auto_now_add=True)
-    processed_at = models.DateTimeField(null=True, blank=True)
-    batch_number = models.IntegerField(default=1)        # 200 payouts per batch
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='queued')
+    gateway = models.CharField(max_length=20, default='razorpay')
+    idempotency_key = models.CharField(max_length=128, unique=True, null=True)
+    gateway_reference_id = models.CharField(max_length=100, null=True, blank=True)
+    initiated_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    failure_reason = models.TextField(null=True, blank=True)
+    meta = models.JSONField(default=dict)
 
     class Meta:
         app_label = 'payouts'
-        ordering = ['-queued_at']
+        db_table = 'payouts_payouttransaction'
+        ordering = ['-initiated_at']
 
     def __str__(self):
         return (

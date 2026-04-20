@@ -60,6 +60,10 @@ class Driver(models.Model):
     months_active = models.IntegerField(default=0)                # auto-calc monthly
     last_beacon_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    is_kyc_verified = models.BooleanField(default=False)
+    payout_account_verified = models.BooleanField(default=False)
+    payout_bank_account = models.CharField(max_length=50, blank=True, null=True)
+    payout_upi_vpa = models.CharField(max_length=100, blank=True, null=True)
     # DPDPA consent — must be True; enforced in serializer
     consent_given = models.BooleanField(default=False)
     consent_timestamp = models.DateTimeField(null=True, blank=True)
@@ -106,6 +110,17 @@ class DriverActivity(models.Model):
     gyro_active = models.BooleanField(default=False)
     network_type = models.CharField(max_length=10, choices=NETWORK_CHOICES, default='4G')
     app_in_foreground = models.BooleanField(default=True)
+    device_fingerprint = models.CharField(max_length=512, default='Unknown')
+
+    # Telemetry and Fraud Detection (Schema Sync)
+    accelerometer_variance = models.FloatField(blank=True, null=True)
+    barometric_pressure = models.FloatField(blank=True, null=True)
+    cell_signal_strength = models.FloatField(blank=True, null=True)
+    is_device_rooted = models.BooleanField(default=False)
+    is_emulator = models.BooleanField(default=False)
+    mock_location_enabled = models.BooleanField(default=False)
+    session_token = models.UUIDField(blank=True, null=True)
+    wifi_network_name = models.CharField(max_length=100, default='Unknown')
 
     class Meta:
         app_label = 'users'

@@ -2,42 +2,6 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authApi, detectPlatform } from '../api/client'
 
-const hashPlatformIdToPhone = (platformId = '') => {
-  const normalized = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  let hash = 0
-  for (let i = 0; i < normalized.length; i += 1) {
-    hash = (hash * 31 + normalized.charCodeAt(i)) % 1000000000
-  }
-  return `9${String(hash).padStart(9, '0')}`
-}
-
-const deriveDemoName = (platformId = '') => {
-  const suffix = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-4) || 'USER'
-  return `Driver ${suffix}`
-}
-
-const toSha256Hex = async (input) => {
-  const data = new TextEncoder().encode(input)
-  const digest = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-const registerViaCompatEndpoint = async (platformId, password) => {
-  const aadhaarHash = await toSha256Hex(`${platformId}-aadhaar`)
-  const deviceHash = await toSha256Hex(`${platformId}-${Date.now()}-web`)
-  return authApi.register({
-    phone: hashPlatformIdToPhone(platformId),
-    password,
-    name: deriveDemoName(platformId),
-    city_id: 1,
-    zone_id: 1,
-    aadhaar_hash: aadhaarHash,
-    pan_hash: '',
-    device_fingerprint: `web_${deviceHash.slice(0, 24)}`,
-    consent_given: true,
-  })
-}
-
 /* ── tiny eye icon (reused from Login) ──────────────────────────────────── */
 const EyeIcon = ({ open }) =>
   open ? (
@@ -103,23 +67,30 @@ export default function Signup() {
     try {
       const platformId = form.platform_id.trim()
 
-      try {
-        await authApi.simpleRegister({
-          name:        form.name.trim(),
-          platform_id: platformId,
-          phone:       form.phone.trim(),
-          password:    form.password,
-        })
-      } catch (registerErr) {
-        if (registerErr.response?.status === 404) {
-          await registerViaCompatEndpoint(platformId, form.password)
-        } else {
-          throw registerErr
-        }
-      }
+      await authApi.simpleRegister({
+        name: form.name.trim(),
+        platform_id: platformId,
+        phone: form.phone.trim(),
+        password: form.password,
+      })
 
-      setSuccess('Account created! Redirecting to login…')
-      setTimeout(() => navigate('/login'), 1800)
+      const loginResponse = await authApi.login({
+        platform_id: platformId,
+        password: form.password,
+      })
+
+      const data = loginResponse.data
+      const role = platformId.toUpperCase().startsWith('ADMIN-') ? 'admin' : 'worker'
+      localStorage.setItem('gs_access', data.access)
+      localStorage.setItem('gs_refresh', data.refresh)
+      localStorage.setItem('gs_driver', JSON.stringify(data.driver))
+      localStorage.setItem('gs_role', role)
+
+      setSuccess('Account created. Choose and activate your protection plan now.')
+      setTimeout(
+        () => navigate('/#protection-plans', { state: { postSignupPlanPrompt: true } }),
+        900,
+      )
     } catch (err) {
       const d = err.response?.data || {}
       const msg =

@@ -42,6 +42,8 @@ class PublicStatsView(APIView):
                 'active_drivers': active_drivers,
                 'total_claims': total_claims,
                 'total_paid_out': str(total_paid),
+                'total_paid': str(total_paid),
+                'total_pool': str(total_pool),
                 'fraud_flags': fraud_flags,
                 'pending_claims': pending_claims,
                 'loss_ratio': round(loss_ratio, 3),
@@ -68,13 +70,15 @@ class PoolHealthView(APIView):
     def get(self, request):
         zones = Zone.objects.select_related('city').filter(city__is_active=True)
         result = []
+        total_pool = zones.aggregate(s=Sum('pool_balance'))['s'] or 0
         for z in zones:
             result.append({
-                'zone': z.name,
+                'name': z.name,
+                'zone': z.name,  # Keep for backward compatibility
                 'city': z.city.name,
                 'pool_balance': str(z.pool_balance),
                 'max_cross_subsidy': str(z.max_cross_subsidy),
                 'risk_score': z.risk_score,
                 'active_driver_count': z.active_driver_count,
             })
-        return Response({'zones': result})
+        return Response({'zones': result, 'total_pool': str(total_pool)})

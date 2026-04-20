@@ -152,7 +152,7 @@ function TerminalCard() {
         <div>
           <p className="font-[--font-mono] text-[10px] text-[--mist-ghost] mb-1 uppercase tracking-widest">Total Paid</p>
           <span className="font-[--font-display] text-[28px] text-[--green] leading-none">
-            {stats.total_paid ? formatINR(stats.total_paid) : '₹—'}
+            {stats.total_paid_out ? formatINR(stats.total_paid_out) : '₹—'}
           </span>
         </div>
         <div>

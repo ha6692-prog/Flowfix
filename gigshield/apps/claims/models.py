@@ -39,6 +39,15 @@ class Claim(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
 
+    # Missing schema alignment fields
+    device_change_detected = models.BooleanField(default=False)
+    fraud_decision = models.CharField(max_length=20, blank=True, null=True)
+    fraud_vector = models.JSONField(default=dict)
+    home_shelter_override = models.BooleanField(default=False)
+    payout_multiplier = models.FloatField(default=1.0)
+    score_multiplier = models.FloatField(default=1.0)
+    tunnel_corridor_passed = models.BooleanField(default=False)
+
     class Meta:
         app_label = 'claims'
         ordering = ['-created_at']
