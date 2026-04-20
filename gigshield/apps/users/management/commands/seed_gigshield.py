@@ -28,6 +28,57 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         city_name = options['city']
         self.stdout.write(self.style.MIGRATE_HEADING(f'\n[SEED] Seeding GigShield for {city_name}...\n'))
+        
+        try:
+            self._run_seed(city_name)
+        except Exception as e:
+            self.stdout.write(self.style.ERROR(f'  [ERROR] Seed failed: {e}'))
+            self.stdout.write(self.style.WARNING(f'  [FALLBACK] Creating essential test accounts...'))
+            self._create_fallback_accounts()
+    
+    def _create_fallback_accounts(self):
+        """Create minimal test accounts if full seed fails."""
+        from apps.users.models import Driver, City, Zone
+        
+        # Ensure city exists
+        city, _ = City.objects.get_or_create(name='Chennai', defaults={'is_active': True})
+        
+        # Ensure zone exists
+        zone, _ = Zone.objects.get_or_create(
+            name='Central Zone',
+            city=city,
+            defaults={'pool_balance': 50000, 'risk_score': 0.0, 'active_driver_count': 0},
+        )
+        
+        # Create essential test accounts
+        test_accounts = [
+            {'platform_id': 'ADMIN-001', 'phone': '9000000001', 'name': 'Platform Admin'},
+            {'platform_id': 'ZMT-DRV-0001', 'phone': '9100000001', 'name': 'Prateek'},
+            {'platform_id': 'SWG-DRV-0002', 'phone': '9100000002', 'name': 'Ananya'},
+        ]
+        
+        for acc in test_accounts:
+            if Driver.objects.filter(platform_id=acc['platform_id']).exists():
+                continue
+            
+            aadhaar_hash = hashlib.sha256(f"TEST_AADHAAR_{acc['phone']}_FALLBACK".encode()).hexdigest()
+            driver = Driver(
+                platform_id=acc['platform_id'],
+                phone=acc['phone'],
+                name=acc['name'],
+                city=city,
+                zone=zone,
+                aadhaar_hash=aadhaar_hash,
+                device_fingerprint=f"fallback_{uuid.uuid4().hex}",
+                is_active=True,
+                consent_given=True,
+                consent_timestamp=timezone.now(),
+            )
+            driver.set_password('gigshield123')
+            driver.save()
+            self.stdout.write(self.style.SUCCESS(f'  [OK] Created fallback account: {acc["platform_id"]}'))
+    
+    def _run_seed(self, city_name):
 
         # ── 1. City ────────────────────────────────────────────────────────────
         from apps.users.models import City, Zone, Driver
