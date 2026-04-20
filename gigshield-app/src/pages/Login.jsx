@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi, detectPlatform, getApiBase } from '../api/client'
+import { authApi, getApiBase } from '../api/client'
 
 const hashPlatformIdToPhone = (platformId = '') => {
   const normalized = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -14,28 +14,6 @@ const hashPlatformIdToPhone = (platformId = '') => {
 const deriveDemoName = (platformId = '') => {
   const suffix = platformId.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(-4) || 'USER'
   return `Driver ${suffix}`
-}
-
-const toSha256Hex = async (input) => {
-  const data = new TextEncoder().encode(input)
-  const digest = await crypto.subtle.digest('SHA-256', data)
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('')
-}
-
-const registerViaCompatEndpoint = async (platformId, password) => {
-  const aadhaarHash = await toSha256Hex(`${platformId}-aadhaar`)
-  const deviceHash = await toSha256Hex(`${platformId}-${Date.now()}-web`)
-  return authApi.register({
-    phone: hashPlatformIdToPhone(platformId),
-    password,
-    name: deriveDemoName(platformId),
-    city_id: 1,
-    zone_id: 1,
-    aadhaar_hash: aadhaarHash,
-    pan_hash: '',
-    device_fingerprint: `web_${deviceHash.slice(0, 24)}`,
-    consent_given: true,
-  })
 }
 
 const getRetryAfterSeconds = (err) => {
@@ -72,7 +50,7 @@ const PlatformBadge = ({ name }) => {
   const colors = {
     Zomato: 'from-red-500/20 to-red-600/10 border-red-500/30 text-red-400',
     Swiggy: 'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-400',
-    Admin:  'from-violet-500/20 to-violet-600/10 border-violet-500/30 text-violet-300',
+    Admin: 'from-violet-500/20 to-violet-600/10 border-violet-500/30 text-violet-300',
   }
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gradient-to-r border ${colors[name] || 'border-slate-500/30 text-slate-400'}`}>
@@ -99,10 +77,10 @@ const TEST_USER_PROFILE = {
 export default function Login() {
   const navigate = useNavigate()
 
-  const [form, setForm]       = useState({ platform_id: '', password: '' })
-  const [showPw, setShowPw]   = useState(false)
+  const [form, setForm] = useState({ platform_id: '', password: '' })
+  const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [error, setError]     = useState('')
+  const [error, setError] = useState('')
   const [autoSignupUnavailable, setAutoSignupUnavailable] = useState(false)
 
   const fill = (platformId) => setForm({ platform_id: platformId, password: 'gigshield123' })
@@ -112,7 +90,7 @@ export default function Login() {
     setError('')
 
     if (!form.platform_id.trim()) { setError('Enter your Platform ID (e.g. ZMT-DRV-0001).'); return }
-    if (!form.password)           { setError('Password is required.'); return }
+    if (!form.password) { setError('Password is required.'); return }
 
     setLoading(true)
     try {
@@ -121,61 +99,16 @@ export default function Login() {
       const platformId = form.platform_id.trim()
       const isKnownTestId = TEST_USERS.some((u) => u.platformId === platformId)
 
-      const candidatePasswords = isKnownTestId && TEST_PASSWORDS.includes(form.password)
-        ? TEST_PASSWORDS
-        : [form.password]
-
       let data = null
       let loginError = null
-      const canAutoOnboard = !isKnownTestId || platformId.toUpperCase().startsWith('ADMIN-')
 
-      for (const pwd of candidatePasswords) {
-        try {
-          const response = await authApi.login({ platform_id: platformId, password: pwd })
-          data = response.data
-          break
-        } catch (attemptErr) {
-          loginError = attemptErr
-
-          if (attemptErr.response?.status === 429) {
-            // Stop further attempts when backend rate-limit is hit.
-            break
-          }
-
-          // Auto-onboard unknown IDs: create account then retry login.
-          const invalidCreds = attemptErr.response?.status === 400
-            && attemptErr.response?.data?.non_field_errors?.[0] === 'Invalid Platform ID or password.'
-          if (invalidCreds && canAutoOnboard) {
-            try {
-              await authApi.simpleRegister({
-                name: deriveDemoName(platformId),
-                platform_id: platformId,
-                phone: hashPlatformIdToPhone(platformId),
-                password: pwd,
-              })
-              const retry = await authApi.login({ platform_id: platformId, password: pwd })
-              data = retry.data
-              break
-            } catch (registerErr) {
-              if (registerErr.response?.status === 404) {
-                try {
-                  await registerViaCompatEndpoint(platformId, pwd)
-                  const retry = await authApi.login({ platform_id: platformId, password: pwd })
-                  data = retry.data
-                  break
-                } catch (compatErr) {
-                  setAutoSignupUnavailable(true)
-                  loginError = compatErr
-                  break
-                }
-              }
-              loginError = registerErr
-            }
-          }
-
-          if (!attemptErr.response || attemptErr.response?.status !== 400) {
-            throw attemptErr
-          }
+      try {
+        const response = await authApi.login({ platform_id: platformId, password: form.password })
+        data = response.data
+      } catch (attemptErr) {
+        loginError = attemptErr
+        if (!attemptErr.response || attemptErr.response?.status !== 400) {
+          throw attemptErr
         }
       }
 
@@ -201,6 +134,8 @@ export default function Login() {
       }
 
       if (!data) throw loginError
+
+      setAutoSignupUnavailable(false)
 
       // Determine role from platform_id prefix
       const role = platformId.toUpperCase().startsWith('ADMIN-') ? 'admin' : 'worker'
@@ -264,7 +199,7 @@ export default function Login() {
               <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider">Unified Login</span>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Use the same <strong className="text-slate-300">Platform ID</strong> from your Zomato or Swiggy driver account. 
+              Use the same <strong className="text-slate-300">Platform ID</strong> from your Zomato or Swiggy driver account.
               Your account status, ride history, and earnings stay synced across platforms.
             </p>
           </div>
