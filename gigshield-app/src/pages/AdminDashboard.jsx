@@ -45,6 +45,8 @@ export default function AdminDashboard() {
     retry: false,
     queryFn: async () => {
       const attempts = [
+        { platform_id: 'ADMIN-001', password: 'gigshield123' },
+        { platform_id: 'ADMIN-001', password: 'test123' },
         { platform_id: 'ZMT-DRV-0001', password: 'test123' },
         { platform_id: 'ZMT-DRV-0001', password: 'gigshield123' },
       ]
