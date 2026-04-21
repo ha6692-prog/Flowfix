@@ -9,6 +9,9 @@
 
 ---
 
+## Pitch Deck
+https://docs.google.com/presentation/d/1cWZ4sDzWSbpYPS_MoMvCZ6YMManmVMZO/edit?usp=drivesdk&ouid=109000361084008891459&rtpof=true&sd=true
+
 ## 1. 🔴 Problem Statement
 
 India's **~11 million** platform-based delivery partners (Swiggy, Zomato, Zepto) lose an estimated **18–25 working days per year** due to external disruptions — heavy monsoon rain, extreme heat, toxic AQI, flash floods, and civic curfews.
